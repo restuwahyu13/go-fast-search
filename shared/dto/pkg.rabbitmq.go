@@ -17,4 +17,5 @@ type RabbitOptions struct {
 	Body         any
 	ContentType  string
 	Timestamp    time.Time
+	Prefetch     int
 }

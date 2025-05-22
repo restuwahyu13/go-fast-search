@@ -2,16 +2,16 @@ package pkg
 
 import (
 	"context"
-
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
+
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 )
 
 type redis struct {
-	redis *goredis.Client
 	ctx   context.Context
+	redis *goredis.Client
 }
 
 func NewRedis(ctx context.Context, con *goredis.Client) (inf.IRedis, error) {

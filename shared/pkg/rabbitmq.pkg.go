@@ -19,12 +19,11 @@ import (
 
 type rabbitmq struct {
 	ctx      context.Context
-	env      dto.Environtment
 	rabbitmq *amqp.Conn
 }
 
-func NewRabbitMQ(ctx context.Context, env dto.Environtment, con *amqp.Conn) inf.IRabbitMQ {
-	return rabbitmq{ctx: ctx, env: env, rabbitmq: con}
+func NewRabbitMQ(ctx context.Context, con *amqp.Conn) inf.IRabbitMQ {
+	return rabbitmq{ctx: ctx, rabbitmq: con}
 }
 
 func (p rabbitmq) Publisher(req dto.Request[dto.RabbitOptions]) error {
@@ -44,6 +43,7 @@ func (p rabbitmq) Publisher(req dto.Request[dto.RabbitOptions]) error {
 		amqp.WithPublisherOptionsExchangeDeclare,
 		amqp.WithPublisherOptionsExchangeDurable,
 		amqp.WithPublisherOptionsExchangeNoWait,
+		amqp.WithPublisherOptionsExchangeArgs(req.Option.Args),
 		amqp.WithPublisherOptionsLogging,
 	)
 
@@ -57,11 +57,12 @@ func (p rabbitmq) Publisher(req dto.Request[dto.RabbitOptions]) error {
 		return err
 	}
 
-	err = publisher.Publish(bodyByte, []string{req.Option.QueueName},
+	err = publisher.PublishWithContext(p.ctx, bodyByte, []string{req.Option.QueueName},
 		amqp.WithPublishOptionsPersistentDelivery,
 		amqp.WithPublishOptionsExchange(req.Option.ExchangeName),
 		amqp.WithPublishOptionsContentType(req.Option.ContentType),
 		amqp.WithPublishOptionsTimestamp(req.Option.Timestamp),
+		amqp.WithPublishOptionsHeaders(req.Option.Args),
 	)
 
 	if err != nil {
@@ -80,6 +81,10 @@ func (p rabbitmq) Consumer(req dto.Request[dto.RabbitOptions], callback func(d a
 		req.Option.Concurrency = runtime.NumCPU() / 2
 	}
 
+	if req.Option.Prefetch < 1 {
+		req.Option.Concurrency = 5
+	}
+
 	consumer, err := amqp.NewConsumer(p.rabbitmq, callback, req.Option.QueueName,
 		amqp.WithConsumerOptionsExchangeName(req.Option.ExchangeName),
 		amqp.WithConsumerOptionsExchangeKind(req.Option.ExchangeType),
@@ -87,7 +92,7 @@ func (p rabbitmq) Consumer(req dto.Request[dto.RabbitOptions], callback func(d a
 			RoutingKey: req.Option.QueueName,
 			BindingOptions: amqp.BindingOptions{
 				Declare: true,
-				NoWait:  false,
+				NoWait:  true,
 				Args:    req.Option.Args,
 			},
 		}),
@@ -96,6 +101,8 @@ func (p rabbitmq) Consumer(req dto.Request[dto.RabbitOptions], callback func(d a
 		amqp.WithConsumerOptionsConsumerName(req.Option.ConsumerID),
 		amqp.WithConsumerOptionsConsumerAutoAck(req.Option.Ack),
 		amqp.WithConsumerOptionsConcurrency(req.Option.Concurrency),
+		amqp.WithConsumerOptionsQOSPrefetch(req.Option.Prefetch),
+		amqp.WithConsumerOptionsQueueArgs(req.Option.Args),
 		amqp.WithConsumerOptionsLogging,
 	)
 
@@ -106,31 +113,28 @@ func (p rabbitmq) Consumer(req dto.Request[dto.RabbitOptions], callback func(d a
 	}
 }
 
-func (p rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Consumer, connection *amqp.Conn) {
-	p.recovery()
+func (h *rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Consumer, connection *amqp.Conn) {
+	defer h.recovery()
 
-	if publisher != nil && consumer != nil && connection != nil {
-		publisher.Close()
-		consumer.Close()
-	} else if publisher != nil && consumer == nil && connection != nil {
-		publisher.Close()
-	} else if publisher == nil && consumer != nil && connection != nil {
-		consumer.Close()
-	} else {
-		closeChan := make(chan os.Signal, 1)
-		signal.Notify(closeChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGALRM, syscall.SIGABRT, syscall.SIGUSR1)
+	closeChan := make(chan os.Signal, 1)
+	signal.Notify(closeChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGALRM, syscall.SIGABRT, syscall.SIGUSR1)
 
-		for {
-			select {
-			case <-closeChan:
-				publisher.Close()
-				consumer.Close()
-				connection.Close()
-			default:
-				return
-			}
+	go func() {
+		<-closeChan
+		close(closeChan)
+
+		if consumer != nil {
+			consumer.Close()
 		}
-	}
+
+		if publisher != nil {
+			publisher.Close()
+		}
+
+		if connection != nil {
+			connection.Close()
+		}
+	}()
 }
 
 func (p rabbitmq) recovery() {

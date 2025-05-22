@@ -15,10 +15,6 @@
 	"maintainers": [
 		"Restu Wahyu Saputra"
 	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/restuwahyu13/go-shopping"
-	},
 	"license": "MIT",
 	"engines": {
 		"node": ">= 20.x.x",
