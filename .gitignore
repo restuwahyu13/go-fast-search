@@ -1,0 +1,82 @@
+# compiled output
+dist/
+node_modules/
+build/
+npm-debug.log
+yarn-error.log
+.DS_Store
+.env
+.env.*
+.idea/
+.vscode/
+*.swp
+*.swo
+out/
+.next/
+.nuxt/
+.docusaurus/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.example
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+*.pem
+*.csr
+*.key
+*.txt
+*.crt
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+## Coverage ##
+coverage/
+.nyc_output/
+
+## OS generated files ##
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+._*
