@@ -6,6 +6,7 @@ import (
 
 	"github.com/uptrace/bun"
 
+	"github.com/restuwahyu13/go-fast-search/shared/dto"
 	opt "github.com/restuwahyu13/go-fast-search/shared/output"
 )
 
@@ -19,16 +20,19 @@ type (
 	}
 
 	IUsersService interface {
-		Ping(ctx context.Context) opt.Response
+		Ping(ctx context.Context) (res opt.Response)
+		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) (res opt.Response)
 	}
 
 	IUsersException interface{}
 
 	IUsersUsecase interface {
 		Ping(ctx context.Context) opt.Response
+		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) opt.Response
 	}
 
 	IUsersController interface {
 		Ping(rw http.ResponseWriter, r *http.Request)
+		CreateUsers(rw http.ResponseWriter, r *http.Request)
 	}
 )

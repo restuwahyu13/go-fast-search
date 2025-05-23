@@ -1,39 +1,17 @@
 package dto
 
-/**
-* ===================================================
-*  USERS REQUEST TERITORY
-* ===================================================
- */
-
 type (
-	LoginDTO struct {
-		Email    string `json:"email" db:"email" validator:"required,email"`
-		Password string `json:"password" validator:"required"`
-	}
-)
-
-/**
-* ===================================================
-*  USERS RESPONSE TERITORY
-* ===================================================
- */
-
-type (
-	Login struct {
-		Role    string `json:"role"`
-		Token   string `json:"token"`
-		Expired int    `json:"expired"`
-	}
-
-	Users struct {
-		ID        string `json:"id,omitempty"`
-		Name      string `json:"name,omitempty"`
-		Email     string `json:"email,omitempty"`
-		Status    string `json:"status,omitempty"`
-		Password  string `json:"password,omitempty"`
-		CreatedAt string `json:"created_at,omitempty"`
-		UpdatedAt string `json:"updated_at,omitempty"`
-		DeletedAt string `json:"deleted_at,omitempty"`
+	CreateUsersDTO struct {
+		Name        string `json:"name" validate:"required"`
+		Email       string `json:"email" validate:"required,email"`
+		Phone       string `json:"phone" validate:"required"`
+		DateOfBirth string `json:"date_of_birth" validate:"required,time=2006-01-02"`
+		Age         int    `json:"age" validate:"required"`
+		Address     string `json:"address" validate:"required"`
+		City        string `json:"city" validate:"required"`
+		State       string `json:"state" validate:"required"`
+		Direction   string `json:"direction" validate:"required"`
+		Country     string `json:"country" validate:"required"`
+		PostalCode  string `json:"postal_code" validate:"required"`
 	}
 )

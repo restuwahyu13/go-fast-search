@@ -9,19 +9,19 @@ import (
 
 type UsersEntitie struct {
 	bun.BaseModel `bun:"table:users,alias:users"`
-	ID            string    `bun:"id,pk,default:uuid_generate_v4()"`
-	Name          string    `bun:"name,notnull"`
-	Email         string    `bun:"email,unique,notnull"`
-	Phone         string    `bun:"status,notnull"`
-	DateOfBirth   string    `bun:"date_of_birth,notnull"`
-	Age           string    `bun:"age,notnull"`
-	Address       string    `bun:"address,notnull"`
-	City          string    `bun:"city,notnull"`
-	State         string    `bun:"state,notnull"`
-	Direction     string    `bun:"direction,notnull"`
-	Country       string    `bun:"country,notnull"`
-	PostalCode    string    `bun:"postal_code,notnull"`
-	CreatedAt     time.Time `bun:"created_at,default:current_timestamp"`
-	UpdatedAt     zero.Time `bun:"updated_at"`
-	DeletedAt     zero.Time `bun:"deleted_at"`
+	ID            string    `json:"id" bun:"id,pk,default:uuid_generate_v4()"`
+	Name          string    `json:"name" bun:"name,notnull"`
+	Email         string    `json:"email" bun:"email,unique,notnull"`
+	Phone         string    `json:"phone" bun:"status,notnull"`
+	DateOfBirth   string    `json:"date_of_birth" bun:"date_of_birth,notnull"`
+	Age           string    `json:"age" bun:"age,notnull"`
+	Address       string    `json:"address" bun:"address,notnull"`
+	City          string    `json:"city" bun:"city,notnull"`
+	State         string    `json:"state" bun:"state,notnull"`
+	Direction     string    `json:"direction" bun:"direction,notnull"`
+	Country       string    `json:"country" bun:"country,notnull"`
+	PostalCode    string    `json:"postal_code" bun:"postal_code,notnull"`
+	CreatedAt     time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
+	UpdatedAt     zero.Time `json:"updated_at" bun:"updated_at"`
+	DeletedAt     zero.Time `json:"deleted_at" bun:"deleted_at"`
 }

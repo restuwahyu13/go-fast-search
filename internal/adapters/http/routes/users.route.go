@@ -18,5 +18,6 @@ func NewUsersRoute(options dto.RouteOptions[inf.IUsersController]) {
 
 	route.router.Route(helper.Version("users"), func(r chi.Router) {
 		r.Get("/", route.controller.Ping)
+		r.Post("/", route.controller.CreateUsers)
 	})
 }
