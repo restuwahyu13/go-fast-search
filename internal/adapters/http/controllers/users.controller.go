@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	gpc "github.com/restuwahyu13/go-playground-converter"
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
@@ -89,7 +89,7 @@ func (c usersController) UpdateUsers(rw http.ResponseWriter, r *http.Request) {
 	res := opt.Response{}
 	req := dto.Request[dto.UpdateUsersDTO]{}
 
-	req.Param.ID = chi.URLParam(r, "id")
+	req.Body.ID = chi.URLParam(r, "id")
 
 	if err := parser.Decode(r.Body, &req.Body); err != nil {
 		pkg.Logrus(cons.ERROR, err)

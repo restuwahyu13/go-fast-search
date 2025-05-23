@@ -13,16 +13,28 @@ install:
 	${GO} mod verify
 	${NPM} i nodemon@latest -g
 
-.PHONY: dev
-dev:
+.PHONY: adev
+adev:
 	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/api --count=1 --race -V --signal SIGTERM
 
-.PHONY: build
-build:
+.PHONY: abuild
+abuild:
 	${GO} mod tidy
 	${GO} mod verify
 	${GO} vet --race -v ./cmd/api
 	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o main ./cmd/api
+
+.PHONY: wdev
+wdev:
+	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/worker --count=1 --race -V --signal SIGTERM
+
+.PHONY: wbuild
+wbuild:
+	${GO} mod tidy
+	${GO} mod verify
+	${GO} vet --race -v ./cmd/api
+	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o main ./cmd/worker
+
 
 .PHONY: test
 test:

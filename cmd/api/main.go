@@ -124,6 +124,7 @@ func NewApi(req dto.Request[Api]) IApi {
 		ROUTER:  req.Option.ROUTER,
 		DB:      req.Option.DB,
 		RDS:     req.Option.RDS,
+		AMQP:    req.Option.AMQP,
 		MLS:     req.Option.MLS,
 	}
 }
@@ -162,13 +163,13 @@ func (i Api) Module() {
 		ENV:    i.ENV,
 		DB:     i.DB,
 		RDS:    i.RDS,
+		AMQP:   i.AMQP,
 		MLS:    i.MLS,
 		ROUTER: i.ROUTER,
 	})
 }
 
 func (i Api) Listener() {
-
 	err := pkg.Graceful(env, func() opt.Graceful {
 		return opt.Graceful{HANDLER: i.ROUTER, ENV: i.ENV_RES}
 	})

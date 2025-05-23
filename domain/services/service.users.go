@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"time"
 
+	"github.com/guregu/null/v6/zero"
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
+	"github.com/wagslane/go-rabbitmq"
 
 	entitie "github.com/restuwahyu13/go-fast-search/domain/entities"
 	repo "github.com/restuwahyu13/go-fast-search/domain/repositories"
@@ -15,17 +18,19 @@ import (
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	opt "github.com/restuwahyu13/go-fast-search/shared/output"
+	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
 
 type usersService struct {
-	env dto.Request[dto.Environtment]
-	db  *bun.DB
-	rds *redis.Client
-	mls meilisearch.ServiceManager
+	env  dto.Request[dto.Environtment]
+	db   *bun.DB
+	rds  *redis.Client
+	amqp *rabbitmq.Conn
+	mls  meilisearch.ServiceManager
 }
 
 func NewUsersService(options dto.ServiceOptions) inf.IUsersService {
-	return usersService{env: options.ENV, db: options.DB, rds: options.RDS, mls: options.MLS}
+	return usersService{env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
 }
 
 func (s usersService) Ping(ctx context.Context) (res opt.Response) {
@@ -97,7 +102,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 
 	err := usersRepositorie.FindOne(&usersEntitie).Column("id").
 		Where("deleted_at IS NULL").
-		Where("id = ?", req.Param.ID).
+		Where("id = ?", req.Body.ID).
 		Scan(ctx)
 
 	if err != nil && err != sql.ErrNoRows {
@@ -118,14 +123,16 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	usersEntitie.Email = req.Body.Email
 	usersEntitie.Phone = req.Body.Phone
 	usersEntitie.DateOfBirth = req.Body.DateOfBirth
+	usersEntitie.Age = req.Body.Age
 	usersEntitie.Address = req.Body.Address
 	usersEntitie.City = req.Body.City
 	usersEntitie.State = req.Body.State
 	usersEntitie.Direction = req.Body.Direction
 	usersEntitie.Country = req.Body.Country
 	usersEntitie.PostalCode = req.Body.PostalCode
+	usersEntitie.UpdatedAt = zero.TimeFrom(time.Now())
 
-	if err := usersRepositorie.Update(&usersEntitie, nil); err != nil {
+	if err := usersRepositorie.Update(&usersEntitie, &usersEntitie); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()
@@ -135,6 +142,23 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 
 		res.StatCode = http.StatusPreconditionFailed
 		res.ErrMsg = "Failed to update new users"
+
+		return
+	}
+
+	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
+	amqp_req := dto.Request[dto.RabbitOptions]{}
+
+	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
+	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
+	amqp_req.Option.QueueName = cons.QUEUE_NAME_SEARCH
+
+	amqp_req.Option.Body = usersEntitie
+	amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: s.env.Config.RABBITMQ.SECRET}
+
+	if err := amqp.Publisher(amqp_req); err != nil {
+		res.StatCode = http.StatusInternalServerError
+		res.ErrMsg = err.Error()
 
 		return
 	}

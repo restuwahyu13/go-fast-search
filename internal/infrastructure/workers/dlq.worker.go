@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -19,7 +20,7 @@ import (
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
 
-type workerSearch struct {
+type workerDeadLetterQueue struct {
 	ctx  context.Context
 	env  dto.Request[dto.Environtment]
 	db   *bun.DB
@@ -28,56 +29,44 @@ type workerSearch struct {
 	mls  meilisearch.ServiceManager
 }
 
-func NewSearchWorker(options dto.WorkerOptions) inf.ISearchWorker {
-	return workerSearch{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
+func NewDeadLetterQueueWorker(options dto.WorkerOptions) inf.IDeadLetterQueueWorker {
+	return workerDeadLetterQueue{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
 }
 
-func (w workerSearch) searchRabbitInstance() inf.IRabbitMQ {
+func (w workerDeadLetterQueue) deadLetterQueueRabbitInstance() inf.IRabbitMQ {
 	return pkg.NewRabbitMQ(w.ctx, w.amqp)
 }
 
-func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, queue, secret string, unknown bool) error {
+func (w workerDeadLetterQueue) deadLetterQueueHandler() {
+	amqp := w.deadLetterQueueRabbitInstance()
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
 	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_DEAD_LETTER_QUEUE
 	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
 	amqp_req.Option.QueueName = cons.QUEUE_NAME_DEAD_LETTER_QUEUE
 	amqp_req.Option.Prefetch = 1
-	amqp_req.Option.Args = rabbitmq.Table{
-		cons.X_RABBIT_QUEUE:   queue,
-		cons.X_RABBIT_SECRET:  secret,
-		cons.X_RABBIT_UNKNOWN: unknown,
-	}
-
-	if err := amqp.Publisher(amqp_req); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (w workerSearch) searchHandler() {
-	amqp := w.searchRabbitInstance()
-	amqp_req := dto.Request[dto.RabbitOptions]{}
-
-	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
-	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
-	amqp_req.Option.QueueName = cons.QUEUE_NAME_SEARCH
-	amqp_req.Option.Prefetch = 1
 	amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: w.env.Config.RABBITMQ.SECRET}
 
 	amqp.Consumer(amqp_req, func(d rabbitmq.Delivery) (action rabbitmq.Action) {
-		if d.Headers[cons.X_RABBIT_SECRET] != w.env.Config.RABBITMQ.SECRET {
-			if err := w.searchDeadLetterQueue(amqp, amqp_req.Option.QueueName, cons.EMPTY, cons.TRUE); err != nil {
-				return rabbitmq.NackDiscard
-			}
+		if d.Headers[cons.X_RABBIT_UNKNOWN] == cons.TRUE && d.Headers[cons.X_RABBIT_SECRET] != w.env.Config.RABBITMQ.SECRET {
+			pkg.Logrus(cons.INFO, "Queue is not allowed to be consumed: %s", string(d.Body))
+			return rabbitmq.NackDiscard
+		}
+
+		amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
+		amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
+		amqp_req.Option.QueueName = fmt.Sprintf("%v", d.Headers[cons.X_RABBIT_QUEUE])
+		amqp_req.Option.Body = d.Body
+
+		if err := amqp.Publisher(amqp_req); err != nil {
+			return rabbitmq.NackDiscard
 		}
 
 		return rabbitmq.Ack
 	})
 }
 
-func (w workerSearch) searchSignal() {
+func (w workerDeadLetterQueue) signalDeadLetterQueue() inf.IRedis {
 	now := time.Now().Format(cons.DATE_TIME_FORMAT)
 
 	ch := make(chan os.Signal, 1)
@@ -86,7 +75,7 @@ func (w workerSearch) searchSignal() {
 	for {
 		select {
 		case sig := <-ch:
-			pkg.Logrus(cons.INFO, "%s - Worker search is received signal: %s", now, sig.String())
+			pkg.Logrus(cons.INFO, "%s - Worker dql is received signal: %s", now, sig.String())
 
 			if w.env.Config.APP.ENV != cons.DEV {
 				time.Sleep(time.Second * 3)
@@ -98,14 +87,14 @@ func (w workerSearch) searchSignal() {
 
 		default:
 			time.Sleep(time.Second * 3)
-			pkg.Logrus(cons.INFO, "%s - Worker search is running...", now)
+			pkg.Logrus(cons.INFO, "%s - Worker dlq is running...", now)
 		}
 	}
 }
 
-func (w workerSearch) SearchRun(wg *sync.WaitGroup) {
+func (w workerDeadLetterQueue) DeadLetterQueueRun(wg *sync.WaitGroup) {
 	defer wg.Wait()
 
-	w.searchHandler()
-	w.searchSignal()
+	w.deadLetterQueueHandler()
+	w.signalDeadLetterQueue()
 }

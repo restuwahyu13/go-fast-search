@@ -29,11 +29,11 @@ func NewRabbitMQ(ctx context.Context, con *amqp.Conn) inf.IRabbitMQ {
 func (p rabbitmq) Publisher(req dto.Request[dto.RabbitOptions]) error {
 	parser := helper.NewParser()
 
-	if req.Option.ContentType != "" {
+	if req.Option.ContentType == "" {
 		req.Option.ContentType = "application/json"
 	}
 
-	if req.Option.Timestamp.Sub(time.Now()).Seconds() < 0 {
+	if req.Option.Timestamp.Sub(time.Now()).Seconds() < 1 {
 		req.Option.Timestamp = time.Now().Local()
 	}
 
@@ -52,10 +52,20 @@ func (p rabbitmq) Publisher(req dto.Request[dto.RabbitOptions]) error {
 		return err
 	}
 
-	bodyByte, err := parser.Marshal(req.Option.Body)
+	bodyByte, err := parser.Marshal(&req.Option.Body)
 	if err != nil {
 		return err
 	}
+
+	publisher.NotifyPublish(func(r amqp.Confirmation) {
+		if !r.Confirmation.Ack {
+			Logrus(cons.ERROR, "Failed message delivery to: %s", req.Option.QueueName)
+			return
+		}
+
+		Logrus(cons.INFO, "Success message delivery to: %s", req.Option.QueueName)
+		return
+	})
 
 	err = publisher.PublishWithContext(p.ctx, bodyByte, []string{req.Option.QueueName},
 		amqp.WithPublishOptionsPersistentDelivery,
@@ -129,10 +139,6 @@ func (h *rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Con
 
 		if publisher != nil {
 			publisher.Close()
-		}
-
-		if connection != nil {
-			connection.Close()
 		}
 	}()
 }

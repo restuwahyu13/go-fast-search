@@ -21,8 +21,9 @@ type (
 	}
 
 	RabbitMQ struct {
-		URL string
-		VSN string
+		URL    string
+		VSN    string
+		SECRET string
 	}
 
 	MeiliSearch struct {

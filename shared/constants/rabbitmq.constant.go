@@ -1,6 +1,12 @@
 package cons
 
 const (
+	X_RABBIT_SECRET  = "X-Rabbit-Secret"
+	X_RABBIT_UNKNOWN = "X-Rabbit-Unknown"
+	X_RABBIT_QUEUE   = "X-Rabbit-Queue"
+)
+
+const (
 	EXCHANGE_TYPE_DIRECT = "direct"
 	EXCHANGE_TYPE_FANOUT = "fanout"
 	EXCHANGE_TYPE_TOPIC  = "topic"
@@ -8,5 +14,13 @@ const (
 )
 
 const (
-	EXCHANGE_NAME_SEARCH = "amq.search"
+	EXCHANGE_NAME_DIRECT            = "amq.direct"
+	EXCHANGE_NAME_TOPIC             = "amq.topic"
+	EXCHANGE_NAME_SEARCH            = "amqp.worker"
+	EXCHANGE_NAME_DEAD_LETTER_QUEUE = "amqp.worker.dlq"
+)
+
+const (
+	QUEUE_NAME_SEARCH            = "worker.search"
+	QUEUE_NAME_DEAD_LETTER_QUEUE = "worker.dlq"
 )

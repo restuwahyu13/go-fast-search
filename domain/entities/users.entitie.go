@@ -23,8 +23,8 @@ type (
 		Country       string    `json:"country" bun:"country,notnull"`
 		PostalCode    string    `json:"postal_code" bun:"postal_code,notnull"`
 		CreatedAt     time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
-		UpdatedAt     zero.Time `json:"updated_at" bun:"updated_at"`
-		DeletedAt     zero.Time `json:"deleted_at" bun:"deleted_at"`
+		UpdatedAt     zero.Time `json:"updated_at" bun:"updated_at,nullzero"`
+		DeletedAt     zero.Time `json:"deleted_at" bun:"deleted_at,nullzero"`
 	}
 
 	UsersDocument struct {

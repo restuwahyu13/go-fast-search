@@ -49,8 +49,9 @@ func NewEnvirontment(name, path, ext string) (*opt.Environtment, error) {
 			EXPIRED: cfg.JWT_EXPIRED,
 		},
 		RABBITMQ: opt.RabbitMQ{
-			URL: cfg.RABBITMQ_QSN,
-			VSN: cfg.RABBITMQ_VSN,
+			URL:    cfg.RABBITMQ_QSN,
+			VSN:    cfg.RABBITMQ_VSN,
+			SECRET: cfg.RABBITMQ_SECRET_KEY,
 		},
 		MEILISEARCH: opt.MeiliSearch{
 			URL: cfg.MEILI_DSN,
