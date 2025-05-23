@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/go-chi/chi"
 	gpc "github.com/restuwahyu13/go-playground-converter"
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
@@ -47,31 +48,89 @@ func (c usersController) CreateUsers(rw http.ResponseWriter, r *http.Request) {
 	req := dto.Request[dto.CreateUsersDTO]{}
 
 	if err := parser.Decode(r.Body, &req.Body); err != nil {
-		pkg.Logrus(cons.ERROR, res.ErrMsg)
-		res.ErrMsg = cons.DEFAULT_ERR_MSG
-
+		pkg.Logrus(cons.ERROR, err)
 		helper.Api(rw, r, res)
 		return
 	}
 
-	result, err := gpc.Validator(req.Body)
+	errors, err := gpc.Validator(req.Body)
 	if err != nil {
-		pkg.Logrus(cons.ERROR, res.ErrMsg)
-		res.ErrMsg = cons.DEFAULT_ERR_MSG
-
+		pkg.Logrus(cons.ERROR, err)
 		helper.Api(rw, r, res)
 		return
 	}
 
-	if len(result.Errors) > 0 {
-		res.StatCode = http.StatusUnsupportedMediaType
-		res.Errors = result.Errors
+	if errors != nil {
+		res.StatCode = http.StatusUnprocessableEntity
+		res.Errors = errors.Errors
 
 		helper.Api(rw, r, res)
 		return
 	}
 
 	if res = c.usecase.CreateUsers(ctx, req); res.StatCode >= http.StatusBadRequest {
+		if res.StatCode >= http.StatusInternalServerError {
+			pkg.Logrus(cons.ERROR, res.ErrMsg)
+			res.ErrMsg = cons.DEFAULT_ERR_MSG
+		}
+
+		helper.Api(rw, r, res)
+		return
+	}
+
+	helper.Api(rw, r, res)
+	return
+}
+
+func (c usersController) UpdateUsers(rw http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	parser := helper.NewParser()
+
+	res := opt.Response{}
+	req := dto.Request[dto.UpdateUsersDTO]{}
+
+	req.Param.ID = chi.URLParam(r, "id")
+
+	if err := parser.Decode(r.Body, &req.Body); err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		helper.Api(rw, r, res)
+		return
+	}
+
+	errors, err := gpc.Validator(req.Body)
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		helper.Api(rw, r, res)
+		return
+	}
+
+	if errors != nil {
+		res.StatCode = http.StatusUnprocessableEntity
+		res.Errors = errors.Errors
+
+		helper.Api(rw, r, res)
+		return
+	}
+
+	if res = c.usecase.UpdateUsers(ctx, req); res.StatCode >= http.StatusBadRequest {
+		if res.StatCode >= http.StatusInternalServerError {
+			pkg.Logrus(cons.ERROR, res.ErrMsg)
+			res.ErrMsg = cons.DEFAULT_ERR_MSG
+		}
+
+		helper.Api(rw, r, res)
+		return
+	}
+
+	helper.Api(rw, r, res)
+	return
+}
+
+func (c usersController) FindAllUsers(rw http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	res := opt.Response{}
+
+	if res = c.usecase.FindAllUsers(ctx); res.StatCode >= http.StatusBadRequest {
 		if res.StatCode >= http.StatusInternalServerError {
 			pkg.Logrus(cons.ERROR, res.ErrMsg)
 			res.ErrMsg = cons.DEFAULT_ERR_MSG

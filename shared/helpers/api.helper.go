@@ -89,9 +89,22 @@ func buildResponse(options opt.Response, r *http.Request, rt *responseTimer) opt
 		ErrMsg:   cons.DEFAULT_ERR_MSG,
 	}
 
+	elapsedNano := time.Since(rt.startTime).Nanoseconds()
+	elapsedMs := float64(elapsedNano) / 1e6
+
 	if isEmptyResponse(options) {
 		defaultErrCode := getErrorCode(http.StatusInternalServerError)
 		response.ErrCode = &defaultErrCode
+		response.Info = opt.Info{
+			Host:         r.Host,
+			Protocol:     getProtocol(r),
+			Path:         r.URL.Path,
+			Method:       r.Method,
+			Timestamp:    time.Now().Format(time.RFC3339),
+			ResponseTime: fmt.Sprintf("%.3f ms", elapsedMs),
+			UserAgent:    r.UserAgent(),
+			IPAddress:    getIPAddress(r),
+		}
 
 		return response
 	}
@@ -105,7 +118,7 @@ func buildResponse(options opt.Response, r *http.Request, rt *responseTimer) opt
 		Path:         r.URL.Path,
 		Method:       r.Method,
 		Timestamp:    time.Now().Format(time.RFC3339),
-		ResponseTime: fmt.Sprintf("%d ms", time.Since(rt.startTime).Milliseconds()),
+		ResponseTime: fmt.Sprintf("%.3f ms", elapsedMs),
 		UserAgent:    r.UserAgent(),
 		IPAddress:    getIPAddress(r),
 	}

@@ -3,11 +3,13 @@ package main
 import (
 	"compress/zlib"
 	"context"
+	"errors"
 	"os"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/meilisearch/meilisearch-go"
 	"github.com/oxequa/grace"
 	"github.com/redis/go-redis/v9"
 	"github.com/unrolled/secure"
@@ -39,6 +41,7 @@ type (
 		DB      *bun.DB
 		RDS     *redis.Client
 		AMQP    *rabbitmq.Conn
+		MLS     meilisearch.ServiceManager
 	}
 )
 
@@ -90,6 +93,13 @@ func main() {
 	}
 	defer amqp.Close()
 
+	mls := con.MeiliSearchConnection(env)
+	if !mls.IsHealthy() {
+		pkg.Logrus(cons.FATAL, errors.New("meilisearch is not healthy"))
+		return
+	}
+	defer mls.Close()
+
 	req := dto.Request[Api]{}
 	req.Option = Api{
 		ENV:     env,
@@ -98,6 +108,7 @@ func main() {
 		DB:      db,
 		RDS:     rds,
 		AMQP:    amqp,
+		MLS:     mls,
 	}
 
 	app := NewApi(req)
@@ -113,6 +124,7 @@ func NewApi(req dto.Request[Api]) IApi {
 		ROUTER:  req.Option.ROUTER,
 		DB:      req.Option.DB,
 		RDS:     req.Option.RDS,
+		MLS:     req.Option.MLS,
 	}
 }
 
@@ -150,6 +162,7 @@ func (i Api) Module() {
 		ENV:    i.ENV,
 		DB:     i.DB,
 		RDS:    i.RDS,
+		MLS:    i.MLS,
 		ROUTER: i.ROUTER,
 	})
 }

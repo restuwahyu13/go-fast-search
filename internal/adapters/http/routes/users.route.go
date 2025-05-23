@@ -17,7 +17,8 @@ func NewUsersRoute(options dto.RouteOptions[inf.IUsersController]) {
 	route := usersRoute{router: options.ROUTER, controller: options.CONTROLLER}
 
 	route.router.Route(helper.Version("users"), func(r chi.Router) {
-		r.Get("/", route.controller.Ping)
 		r.Post("/", route.controller.CreateUsers)
+		r.Get("/", route.controller.FindAllUsers)
+		r.Put("/{id}", route.controller.UpdateUsers)
 	})
 }

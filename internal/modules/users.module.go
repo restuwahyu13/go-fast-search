@@ -10,7 +10,7 @@ import (
 )
 
 func NewUsersModule[IService any](options dto.ModuleOptions) {
-	service := service.NewUsersService(dto.ServiceOptions{ENV: options.ENV, DB: options.DB, RDS: options.RDS})
+	service := service.NewUsersService(dto.ServiceOptions{ENV: options.ENV, DB: options.DB, RDS: options.RDS, MLS: options.MLS})
 
 	usecase := usecase.NewUsersUsecase(dto.UsecaseOptions[inf.IUsersService]{SERVICE: service})
 

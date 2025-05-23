@@ -23,3 +23,11 @@ func (u usersUsecase) Ping(ctx context.Context) opt.Response {
 func (u usersUsecase) CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) opt.Response {
 	return u.service.CreateUsers(ctx, req)
 }
+
+func (u usersUsecase) UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) opt.Response {
+	return u.service.UpdateUsers(ctx, req)
+}
+
+func (u usersUsecase) FindAllUsers(ctx context.Context) opt.Response {
+	return u.service.FindAllUsers(ctx)
+}

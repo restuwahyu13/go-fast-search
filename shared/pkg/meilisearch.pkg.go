@@ -28,13 +28,11 @@ func (p meilisearch) validate(doc string, value any) error {
 		return err
 	}
 
-	if result.UID != "" {
-		return errors.New("doc: collection doc not exists in our system")
+	if result == nil {
+		return errors.New("doc: collection not exists in our system")
 	}
 
-	if value != nil && reflect.ValueOf(value).Kind() != reflect.Pointer {
-		return errors.New("value must be a pointer")
-	} else {
+	if value != nil && reflect.ValueOf(value).Kind() == reflect.Pointer {
 		if reflect.ValueOf(value).Elem().Kind() != reflect.Map || reflect.ValueOf(value).Elem().Kind() != reflect.Struct {
 			return errors.New("value must be a map or struct")
 		} else if reflect.ValueOf(value).Elem().Kind() != reflect.Slice {
@@ -61,6 +59,19 @@ func (p meilisearch) CreateCollection(name string, primaryKey string, schema any
 }
 
 func (p meilisearch) Insert(doc string, value any) (*search.TaskInfo, error) {
+	if err := p.validate(doc, value); err != nil {
+		return nil, err
+	}
+
+	res, err := p.meilisearch.Index(doc).AddDocumentsWithContext(p.ctx, value)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (p meilisearch) BulkInsert(doc string, value any) (*search.TaskInfo, error) {
 	if err := p.validate(doc, value); err != nil {
 		return nil, err
 	}
@@ -141,7 +152,7 @@ func (p meilisearch) Update(doc string, id string, value any) (*search.TaskInfo,
 	return task, nil
 }
 
-func (p meilisearch) BulkUpdate(doc string, id string, value any) (*search.TaskInfo, error) {
+func (p meilisearch) BulkUpdate(doc string, value any) (*search.TaskInfo, error) {
 	if err := p.validate(doc, value); err != nil {
 		return nil, err
 	}
