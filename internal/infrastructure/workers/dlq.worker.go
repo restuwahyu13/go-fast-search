@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -37,7 +36,7 @@ func (w workerDeadLetterQueue) deadLetterQueueRabbitInstance() inf.IRabbitMQ {
 	return pkg.NewRabbitMQ(w.ctx, w.amqp)
 }
 
-func (w workerDeadLetterQueue) deadLetterQueueHandler() {
+func (w workerDeadLetterQueue) deadLetterQueueConsumer() {
 	amqp := w.deadLetterQueueRabbitInstance()
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
@@ -56,9 +55,12 @@ func (w workerDeadLetterQueue) deadLetterQueueHandler() {
 		amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
 		amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
 		amqp_req.Option.QueueName = fmt.Sprintf("%v", d.Headers[cons.X_RABBIT_QUEUE])
-		amqp_req.Option.Body = d.Body
+		amqp_req.Option.Body = string(d.Body)
+
+		pkg.Logrus(cons.INFO, "Queue is allowed to be consumed: %#v", amqp_req.Option)
 
 		if err := amqp.Publisher(amqp_req); err != nil {
+			pkg.Logrus(cons.ERROR, err)
 			return rabbitmq.NackDiscard
 		}
 
@@ -92,9 +94,7 @@ func (w workerDeadLetterQueue) signalDeadLetterQueue() inf.IRedis {
 	}
 }
 
-func (w workerDeadLetterQueue) DeadLetterQueueRun(wg *sync.WaitGroup) {
-	defer wg.Wait()
-
-	w.deadLetterQueueHandler()
+func (w workerDeadLetterQueue) DeadLetterQueueRun() {
+	w.deadLetterQueueConsumer()
 	w.signalDeadLetterQueue()
 }

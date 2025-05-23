@@ -1,13 +1,11 @@
 package inf
 
-import "sync"
-
 type (
 	ISearchWorker interface {
-		SearchRun(wg *sync.WaitGroup)
+		SearchRun()
 	}
 
 	IDeadLetterQueueWorker interface {
-		DeadLetterQueueRun(wg *sync.WaitGroup)
+		DeadLetterQueueRun()
 	}
 )

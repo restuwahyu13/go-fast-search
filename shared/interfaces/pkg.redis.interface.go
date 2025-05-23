@@ -5,6 +5,7 @@ import (
 )
 
 type IRedis interface {
+	Set(key string, value any) error
 	SetEx(key string, expiration time.Duration, value any) error
 	Get(key string) ([]byte, error)
 	Exists(key string) (int64, error)

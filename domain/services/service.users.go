@@ -16,6 +16,7 @@ import (
 	repo "github.com/restuwahyu13/go-fast-search/domain/repositories"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
+	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	opt "github.com/restuwahyu13/go-fast-search/shared/output"
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
@@ -70,6 +71,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersEntitie.Phone = req.Body.Phone
 	usersEntitie.DateOfBirth = req.Body.DateOfBirth
 	usersEntitie.Address = req.Body.Address
+	usersEntitie.Age = req.Body.Age
 	usersEntitie.City = req.Body.City
 	usersEntitie.State = req.Body.State
 	usersEntitie.Direction = req.Body.Direction
@@ -86,6 +88,15 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 
 		res.StatCode = http.StatusPreconditionFailed
 		res.ErrMsg = "Failed to create new users"
+
+		return
+	}
+
+	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
+
+	if err := helper.MeiliSearchPublisher[entitie.UsersEntitie](amqp, s.env.Config.RABBITMQ.SECRET, nil, usersEntitie, cons.FALSE, cons.INSERT); err != nil {
+		res.StatCode = http.StatusInternalServerError
+		res.ErrMsg = err.Error()
 
 		return
 	}
@@ -147,16 +158,8 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	}
 
 	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
-	amqp_req := dto.Request[dto.RabbitOptions]{}
 
-	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
-	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
-	amqp_req.Option.QueueName = cons.QUEUE_NAME_SEARCH
-
-	amqp_req.Option.Body = usersEntitie
-	amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: s.env.Config.RABBITMQ.SECRET}
-
-	if err := amqp.Publisher(amqp_req); err != nil {
+	if err := helper.MeiliSearchPublisher[entitie.UsersEntitie](amqp, s.env.Config.RABBITMQ.SECRET, req.Body.ID, usersEntitie, cons.FALSE, cons.UPDATE); err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()
 
@@ -173,7 +176,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 func (s usersService) FindAllUsers(ctx context.Context) (res opt.Response) {
 	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
 
-	usersDocResult, err := usersRepositorie.Find("users", &meilisearch.DocumentsQuery{})
+	usersDocResult, err := usersRepositorie.Find(&meilisearch.DocumentsQuery{})
 	if err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()

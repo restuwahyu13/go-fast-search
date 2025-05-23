@@ -2,9 +2,9 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
+	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
@@ -36,17 +37,41 @@ func (w workerSearch) searchRabbitInstance() inf.IRabbitMQ {
 	return pkg.NewRabbitMQ(w.ctx, w.amqp)
 }
 
-func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, queue, secret string, unknown bool) error {
+func (w workerSearch) searchChangeDataCapture() error {
+	key := "WORKER:SEARCH:CDC"
+	value := time.Now().Format(cons.DATE_TIME_FORMAT)
+
+	rds, err := pkg.NewRedis(w.ctx, w.rds)
+	if err != nil {
+		return err
+	}
+
+	isExist, err := rds.Exists(key)
+	if err != nil {
+		return err
+	}
+
+	if isExist < 1 {
+		if err := rds.Set(key, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, req dto.RabbitDeadLetterQueueOptions) error {
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
 	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_DEAD_LETTER_QUEUE
 	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
 	amqp_req.Option.QueueName = cons.QUEUE_NAME_DEAD_LETTER_QUEUE
-	amqp_req.Option.Prefetch = 1
+	amqp_req.Option.Body = req.Body
 	amqp_req.Option.Args = rabbitmq.Table{
-		cons.X_RABBIT_QUEUE:   queue,
-		cons.X_RABBIT_SECRET:  secret,
-		cons.X_RABBIT_UNKNOWN: unknown,
+		cons.X_RABBIT_QUEUE:   req.Queue,
+		cons.X_RABBIT_SECRET:  req.Secret,
+		cons.X_RABBIT_UNKNOWN: req.Unknown,
+		cons.X_MESSAGE_TTL:    15,
 	}
 
 	if err := amqp.Publisher(amqp_req); err != nil {
@@ -56,7 +81,7 @@ func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, queue, secret st
 	return nil
 }
 
-func (w workerSearch) searchHandler() {
+func (w workerSearch) searchConsumer() {
 	amqp := w.searchRabbitInstance()
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
@@ -67,14 +92,83 @@ func (w workerSearch) searchHandler() {
 	amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: w.env.Config.RABBITMQ.SECRET}
 
 	amqp.Consumer(amqp_req, func(d rabbitmq.Delivery) (action rabbitmq.Action) {
+		parser := helper.NewParser()
+
+		dlq_req := dto.RabbitDeadLetterQueueOptions{}
+		req := dto.Request[dto.MeiliSearchDocuments[map[string]any]]{}
+
+		if err := parser.Unmarshal(d.Body, &req.Body); err != nil {
+			return rabbitmq.NackDiscard
+		}
+
+		dlq_req.Body = req.Body
+
 		if d.Headers[cons.X_RABBIT_SECRET] != w.env.Config.RABBITMQ.SECRET {
-			if err := w.searchDeadLetterQueue(amqp, amqp_req.Option.QueueName, cons.EMPTY, cons.TRUE); err != nil {
+			dlq_req.Unknown = cons.TRUE
+			dlq_req.Error = errors.New("Queue is not allowed to be consumed")
+		}
+
+		if err := w.searchChangeDataCapture(); err != nil {
+			dlq_req.Unknown = cons.FALSE
+			dlq_req.Error = err
+		}
+
+		if err := w.searchHandler(req); err != nil {
+			dlq_req.Unknown = cons.FALSE
+			dlq_req.Error = err
+		}
+
+		if dlq_req.Body.Data != nil && dlq_req.Error != nil {
+			count := 0
+			backoff := 2
+			retry := 5
+
+			if count < retry {
+				count++
+				time.Sleep(time.Duration(backoff+retry) * time.Second)
+			}
+
+			dlq_req.Queue = amqp_req.Option.QueueName
+			dlq_req.Secret = d.Headers[cons.X_RABBIT_SECRET]
+
+			if err := w.searchDeadLetterQueue(amqp, dlq_req); err != nil {
+				pkg.Logrus(cons.ERROR, err)
 				return rabbitmq.NackDiscard
 			}
+
+			return rabbitmq.NackDiscard
 		}
 
 		return rabbitmq.Ack
 	})
+}
+
+func (w workerSearch) searchHandler(req dto.Request[dto.MeiliSearchDocuments[map[string]any]]) error {
+	// mls := pkg.NewMeiliSearch(w.ctx, w.mls)
+
+	switch req.Body.Action {
+
+	// case cons.INSERT:
+	// 	if _, err := mls.Insert(req.Body.Doc, &req.Body.Data); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+
+	// case cons.UPDATE:
+	// 	if _, err := mls.Update(req.Body.Doc, req.Body.ID.(string), &req.Body.Data); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+
+	// case cons.DELETE:
+	// 	if _, err := mls.Delete(req.Body.Doc, req.Body.ID.(string)); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+
+	default:
+		return errors.New("Meilisearch unknown action")
+	}
 }
 
 func (w workerSearch) searchSignal() {
@@ -103,9 +197,7 @@ func (w workerSearch) searchSignal() {
 	}
 }
 
-func (w workerSearch) SearchRun(wg *sync.WaitGroup) {
-	defer wg.Wait()
-
-	w.searchHandler()
+func (w workerSearch) SearchRun() {
+	w.searchConsumer()
 	w.searchSignal()
 }

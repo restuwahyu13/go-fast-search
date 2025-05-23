@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"reflect"
+	"slices"
 	"time"
 
 	search "github.com/meilisearch/meilisearch-go"
@@ -32,11 +33,13 @@ func (p meilisearch) validate(doc string, value any) error {
 		return errors.New("doc: collection not exists in our system")
 	}
 
-	if value != nil && reflect.ValueOf(value).Kind() == reflect.Pointer {
-		if reflect.ValueOf(value).Elem().Kind() != reflect.Map || reflect.ValueOf(value).Elem().Kind() != reflect.Struct {
-			return errors.New("value must be a map or struct")
-		} else if reflect.ValueOf(value).Elem().Kind() != reflect.Slice {
-			return errors.New("value must be a slice")
+	valueof := reflect.ValueOf(value)
+	if value != nil && valueof.Kind() == reflect.Pointer {
+		elemof := valueof.Elem().Kind()
+		validElem := []reflect.Kind{reflect.Map, reflect.Struct, reflect.Slice}
+
+		if slices.Index(validElem, elemof) == -1 {
+			return errors.New("value must be a map, struct or slice")
 		}
 	}
 
@@ -180,7 +183,7 @@ func (p meilisearch) Delete(doc string, id string) (*search.TaskInfo, error) {
 		return nil, err
 	}
 
-	if err := p.FindOne(doc, id, &search.DocumentQuery{Fields: []string{"id"}}, &res); err != nil {
+	if err := p.FindOne(doc, id, &search.DocumentQuery{}, &res); err != nil {
 		return nil, err
 	}
 
@@ -188,7 +191,9 @@ func (p meilisearch) Delete(doc string, id string) (*search.TaskInfo, error) {
 		return nil, sql.ErrNoRows
 	}
 
-	task, err := p.meilisearch.Index(doc).DeleteDocumentsWithContext(p.ctx, []string{id})
+	res["deleted_at"] = time.Now().Format(cons.DATE_TIME_FORMAT)
+
+	task, err := p.meilisearch.Index(doc).UpdateDocumentsWithContext(p.ctx, &res)
 	if err != nil {
 		return nil, err
 	}
@@ -205,23 +210,27 @@ func (p meilisearch) Delete(doc string, id string) (*search.TaskInfo, error) {
 }
 
 func (p meilisearch) BulkDelete(doc string, ids ...string) (*search.TaskInfo, error) {
-	res := make(map[string]any)
+	resDoc := make(map[string]any)
+	resDcos := []map[string]any{}
 
 	if err := p.validate(doc, nil); err != nil {
 		return nil, err
 	}
 
 	for _, id := range ids {
-		if err := p.FindOne(doc, id, &search.DocumentQuery{Fields: []string{"id"}}, &res); err != nil {
+		if err := p.FindOne(doc, id, &search.DocumentQuery{}, &resDoc); err != nil {
 			return nil, err
 		}
 
-		if res == nil {
+		if resDoc == nil {
 			return nil, sql.ErrNoRows
 		}
+
+		resDoc["deleted_at"] = time.Now().Format(cons.DATE_TIME_FORMAT)
+		resDcos = append(resDcos, resDoc)
 	}
 
-	task, err := p.meilisearch.Index(doc).DeleteDocumentsWithContext(p.ctx, ids)
+	task, err := p.meilisearch.Index(doc).UpdateDocumentsWithContext(p.ctx, &resDcos)
 	if err != nil {
 		return nil, err
 	}

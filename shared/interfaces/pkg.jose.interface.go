@@ -5,6 +5,7 @@ import (
 
 	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/lestrrat-go/jwx/v3/jwt"
+
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
 	opt "github.com/restuwahyu13/go-fast-search/shared/output"
 )

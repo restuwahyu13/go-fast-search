@@ -22,12 +22,13 @@ type (
 	}
 
 	IUsersMeiliSearchRepositorie interface {
-		Find(doc string, filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
-		FindOne(doc string, id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error)
-		Insert(doc string, value any) error
-		Update(doc string, id string, value any) error
-		BulkInsert(doc string, value any) error
-		BulkUpdate(doc string, value any) error
+		Find(filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
+		FindOne(id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error)
+		Insert(value any) error
+		Update(id string, value any) error
+		Delete(id string) error
+		BulkInsert(value any) error
+		BulkUpdate(value any) error
 	}
 
 	IUsersService interface {

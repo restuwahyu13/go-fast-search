@@ -115,12 +115,14 @@ func (p rabbitmq) Consumer(req dto.Request[dto.RabbitOptions], callback func(d a
 		amqp.WithConsumerOptionsQueueArgs(req.Option.Args),
 		amqp.WithConsumerOptionsLogging,
 	)
+	defer p.closeConnection(nil, consumer, p.rabbitmq)
 
 	if err != nil {
 		Logrus(cons.ERROR, err)
-		p.closeConnection(nil, consumer, p.rabbitmq)
 		return
 	}
+
+	return
 }
 
 func (h *rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Consumer, connection *amqp.Conn) {

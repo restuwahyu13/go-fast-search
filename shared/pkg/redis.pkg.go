@@ -18,6 +18,16 @@ func NewRedis(ctx context.Context, con *goredis.Client) (inf.IRedis, error) {
 	return &redis{redis: con, ctx: ctx}, nil
 }
 
+func (p redis) Set(key string, value any) error {
+	cmd := p.redis.Set(p.ctx, key, value, 0)
+
+	if err := cmd.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p redis) SetEx(key string, expiration time.Duration, value any) error {
 	cmd := p.redis.SetEx(p.ctx, key, value, expiration)
 

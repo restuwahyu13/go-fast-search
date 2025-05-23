@@ -174,7 +174,7 @@ func NewUsersMeilisearchRepositorie(ctx context.Context, db meilisearch.ServiceM
 	return usersMeilisearchRepositorie{ctx: ctx, meilisearch: meilisearch, doc: new(entitie.UsersDocument)}
 }
 
-func (r usersMeilisearchRepositorie) Find(name string, filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
+func (r usersMeilisearchRepositorie) Find(filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
 	transform := helper.NewTransform()
 
 	docResult := new(meilisearch.DocumentsResult)
@@ -196,7 +196,7 @@ func (r usersMeilisearchRepositorie) Find(name string, filter *meilisearch.Docum
 	return docResultReformat, nil
 }
 
-func (r usersMeilisearchRepositorie) Search(name string, query string, filter *meilisearch.SearchRequest) (*opt.UsersSearch, error) {
+func (r usersMeilisearchRepositorie) Search(query string, filter *meilisearch.SearchRequest) (*opt.UsersSearch, error) {
 	parser := helper.NewParser()
 
 	result := new(meilisearch.SearchResponse)
@@ -223,7 +223,7 @@ func (r usersMeilisearchRepositorie) Search(name string, query string, filter *m
 	return res, nil
 }
 
-func (r usersMeilisearchRepositorie) FindOne(name string, id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error) {
+func (r usersMeilisearchRepositorie) FindOne(id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error) {
 	res := new(entitie.UsersDocument)
 
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
@@ -238,7 +238,7 @@ func (r usersMeilisearchRepositorie) FindOne(name string, id string, filter *mei
 	return res, nil
 }
 
-func (r usersMeilisearchRepositorie) Insert(name string, value any) error {
+func (r usersMeilisearchRepositorie) Insert(value any) error {
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (r usersMeilisearchRepositorie) Insert(name string, value any) error {
 	return nil
 }
 
-func (r usersMeilisearchRepositorie) Update(name string, id string, value any) error {
+func (r usersMeilisearchRepositorie) Update(id string, value any) error {
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
 		return err
 	}
@@ -262,7 +262,19 @@ func (r usersMeilisearchRepositorie) Update(name string, id string, value any) e
 	return nil
 }
 
-func (r usersMeilisearchRepositorie) BulkInsert(name string, value any) error {
+func (r usersMeilisearchRepositorie) Delete(id string) error {
+	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
+		return err
+	}
+
+	if _, err := r.meilisearch.Delete("users", id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) BulkInsert(value any) error {
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
 		return err
 	}
@@ -274,12 +286,24 @@ func (r usersMeilisearchRepositorie) BulkInsert(name string, value any) error {
 	return nil
 }
 
-func (r usersMeilisearchRepositorie) BulkUpdate(name string, value any) error {
+func (r usersMeilisearchRepositorie) BulkUpdate(value any) error {
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
 		return err
 	}
 
 	if _, err := r.meilisearch.BulkUpdate("users", value); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) BulkDelete(ids ...string) error {
+	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
+		return err
+	}
+
+	if _, err := r.meilisearch.BulkDelete("users", ids...); err != nil {
 		return err
 	}
 

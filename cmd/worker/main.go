@@ -118,33 +118,37 @@ func NewWorker(req dto.Request[Worker]) IWorker {
 	}
 }
 
-func (i Worker) Register() {
-	wg := new(sync.WaitGroup)
+func (i Worker) Register(wg *sync.WaitGroup) {
 	wg.Add(2)
 
-	go worker.NewSearchWorker(dto.WorkerOptions{
-		CTX:  i.CTX,
-		ENV:  i.ENV,
-		DB:   i.DB,
-		RDS:  i.RDS,
-		AMQP: i.AMQP,
-		MLS:  i.MLS,
-	}).SearchRun(wg)
+	go func() {
+		defer wg.Done()
+		worker.NewSearchWorker(dto.WorkerOptions{
+			CTX:  i.CTX,
+			ENV:  i.ENV,
+			DB:   i.DB,
+			RDS:  i.RDS,
+			AMQP: i.AMQP,
+			MLS:  i.MLS,
+		}).SearchRun()
+	}()
 
-	go worker.NewDeadLetterQueueWorker(dto.WorkerOptions{
-		CTX:  i.CTX,
-		ENV:  i.ENV,
-		DB:   i.DB,
-		RDS:  i.RDS,
-		AMQP: i.AMQP,
-		MLS:  i.MLS,
-	}).DeadLetterQueueRun(wg)
-
-	wg.Wait()
+	go func() {
+		defer wg.Done()
+		worker.NewDeadLetterQueueWorker(dto.WorkerOptions{
+			CTX:  i.CTX,
+			ENV:  i.ENV,
+			DB:   i.DB,
+			RDS:  i.RDS,
+			AMQP: i.AMQP,
+			MLS:  i.MLS,
+		}).DeadLetterQueueRun()
+	}()
 }
 
 func (i Worker) Listener() {
-	i.Register()
+	wg := sync.WaitGroup{}
+	i.Register(&wg)
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGALRM, syscall.SIGABRT, syscall.SIGUSR1)
@@ -158,10 +162,12 @@ func (i Worker) Listener() {
 				time.Sleep(time.Second * 10)
 			}
 
+			wg.Wait()
 			os.Exit(0)
 
 		default:
 			time.Sleep(time.Second * 3)
+			wg.Wait()
 		}
 	}
 }
