@@ -60,15 +60,20 @@ func (w workerSearch) searchChangeDataCapture() error {
 	return nil
 }
 
-func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, req dto.RabbitDeadLetterQueueOptions) error {
+func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, req *dto.RabbitDeadLetterQueueOptions) error {
 	amqp_req := dto.Request[dto.RabbitOptions]{}
+	amqp_req.Option.ExchangeName = req.Exchange
+	amqp_req.Option.ExchangeType = req.ExchangeType
+	amqp_req.Option.QueueName = req.Queue
+	amqp_req.Option.Body = req.Body
+
+	amqp_body := amqp_req
 
 	amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_DEAD_LETTER_QUEUE
 	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
 	amqp_req.Option.QueueName = cons.QUEUE_NAME_DEAD_LETTER_QUEUE
-	amqp_req.Option.Body = req.Body
+	amqp_req.Option.Body = amqp_body
 	amqp_req.Option.Args = rabbitmq.Table{
-		cons.X_RABBIT_QUEUE:   req.Queue,
 		cons.X_RABBIT_SECRET:  req.Secret,
 		cons.X_RABBIT_UNKNOWN: req.Unknown,
 		cons.X_MESSAGE_TTL:    15,
@@ -104,34 +109,29 @@ func (w workerSearch) searchConsumer() {
 		dlq_req.Body = req.Body
 
 		if d.Headers[cons.X_RABBIT_SECRET] != w.env.Config.RABBITMQ.SECRET {
+			dlq_req.Secret = cons.EMPTY
 			dlq_req.Unknown = cons.TRUE
 			dlq_req.Error = errors.New("Queue is not allowed to be consumed")
 		}
 
 		if err := w.searchChangeDataCapture(); err != nil {
+			dlq_req.Secret = d.Headers[cons.X_RABBIT_SECRET]
 			dlq_req.Unknown = cons.FALSE
 			dlq_req.Error = err
 		}
 
 		if err := w.searchHandler(req); err != nil {
+			dlq_req.Secret = d.Headers[cons.X_RABBIT_SECRET]
 			dlq_req.Unknown = cons.FALSE
 			dlq_req.Error = err
 		}
 
 		if dlq_req.Body.Data != nil && dlq_req.Error != nil {
-			count := 0
-			backoff := 2
-			retry := 5
-
-			if count < retry {
-				count++
-				time.Sleep(time.Duration(backoff+retry) * time.Second)
-			}
-
+			dlq_req.Exchange = amqp_req.Option.ExchangeName
+			dlq_req.ExchangeType = amqp_req.Option.ExchangeType
 			dlq_req.Queue = amqp_req.Option.QueueName
-			dlq_req.Secret = d.Headers[cons.X_RABBIT_SECRET]
 
-			if err := w.searchDeadLetterQueue(amqp, dlq_req); err != nil {
+			if err := w.searchDeadLetterQueue(amqp, &dlq_req); err != nil {
 				pkg.Logrus(cons.ERROR, err)
 				return rabbitmq.NackDiscard
 			}

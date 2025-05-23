@@ -22,10 +22,12 @@ type (
 	}
 
 	RabbitDeadLetterQueueOptions struct {
-		Queue   string
-		Body    MeiliSearchDocuments[map[string]any]
-		Secret  any
-		Unknown bool
-		Error   error
+		Exchange     string
+		ExchangeType string
+		Queue        string
+		Body         MeiliSearchDocuments[map[string]any]
+		Secret       any
+		Unknown      bool
+		Error        error
 	}
 )

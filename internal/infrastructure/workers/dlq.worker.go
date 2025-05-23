@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,6 +15,7 @@ import (
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
+	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
@@ -52,16 +53,29 @@ func (w workerDeadLetterQueue) deadLetterQueueConsumer() {
 			return rabbitmq.NackDiscard
 		}
 
-		amqp_req.Option.ExchangeName = cons.EXCHANGE_NAME_SEARCH
-		amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
-		amqp_req.Option.QueueName = fmt.Sprintf("%v", d.Headers[cons.X_RABBIT_QUEUE])
-		amqp_req.Option.Body = string(d.Body)
+		pkg.Logrus(cons.INFO, "Before queue is allowed to be consumed: %s", string(d.Body))
 
-		pkg.Logrus(cons.INFO, "Queue is allowed to be consumed: %#v", amqp_req.Option)
-
-		if err := amqp.Publisher(amqp_req); err != nil {
-			pkg.Logrus(cons.ERROR, err)
+		parser := helper.NewParser()
+		if err := parser.Unmarshal(d.Body, &amqp_req); err != nil {
 			return rabbitmq.NackDiscard
+		}
+
+		count := 0
+		retry := 10
+		backoff := time.Duration(math.Pow(2, float64(count))) * time.Second
+
+		if count <= retry {
+			count++
+			time.Sleep(backoff)
+		}
+
+		pkg.Logrus(cons.INFO, "After queue is allowed to be consumed: %#v", amqp_req.Option)
+
+		if amqp_req.Option.Body != nil {
+			if err := amqp.Publisher(amqp_req); err != nil {
+				pkg.Logrus(cons.ERROR, err)
+				return rabbitmq.NackDiscard
+			}
 		}
 
 		return rabbitmq.Ack

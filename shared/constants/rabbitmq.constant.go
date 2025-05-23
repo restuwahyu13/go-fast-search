@@ -1,10 +1,12 @@
 package cons
 
 const (
-	X_RABBIT_SECRET  = "X-rabbit-secret"
-	X_RABBIT_UNKNOWN = "X-rabbit-unknown"
-	X_RABBIT_QUEUE   = "X-rabbit-queue"
-	X_MESSAGE_TTL    = "x-message-ttl"
+	X_RABBIT_SECRET        = "x-rabbit-secret"
+	X_RABBIT_UNKNOWN       = "x-rabbit-unknown"
+	X_RABBIT_QUEUE         = "x-rabbit-queue"
+	X_RABBIT_EXCHANGE      = "x-rabbit-exchange"
+	X_RABBIT_EXCHANGE_TYPE = "x-rabbit-exchange-type"
+	X_MESSAGE_TTL          = "x-message-ttl"
 )
 
 const (
