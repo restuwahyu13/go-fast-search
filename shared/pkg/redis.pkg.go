@@ -15,7 +15,7 @@ type redis struct {
 }
 
 func NewRedis(ctx context.Context, con *goredis.Client) (inf.IRedis, error) {
-	return &redis{redis: con, ctx: ctx}, nil
+	return redis{redis: con, ctx: ctx}, nil
 }
 
 func (p redis) Set(key string, value any) error {
@@ -89,4 +89,15 @@ func (p redis) HGet(key, field string) ([]byte, error) {
 
 	res := cmd.Val()
 	return []byte(res), nil
+}
+
+func (p redis) IncrBy(key string, value int) (int, error) {
+	cmd := p.redis.IncrBy(p.ctx, key, int64(value))
+
+	if err := cmd.Err(); err != nil {
+		return -1, err
+	}
+
+	res := cmd.Val()
+	return int(res), nil
 }

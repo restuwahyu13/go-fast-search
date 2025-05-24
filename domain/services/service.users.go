@@ -45,12 +45,12 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersRepositorie := repo.NewUsersRepositorie(ctx, s.db)
 	usersEntitie := entitie.UsersEntitie{}
 
-	err := usersRepositorie.FindOne(&usersEntitie).Column("id").
+	err := usersRepositorie.FindOne().Column("id").
 		Where("deleted_at IS NULL").
 		Where("name = ?", req.Body.Name).
 		Where("email = ?", req.Body.Email).
 		Where("phone = ?", req.Body.Phone).
-		Scan(ctx)
+		Scan(ctx, &usersEntitie)
 
 	if err != nil && err != sql.ErrNoRows {
 		res.StatCode = http.StatusInternalServerError
@@ -78,7 +78,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersEntitie.Country = req.Body.Country
 	usersEntitie.PostalCode = req.Body.PostalCode
 
-	if err := usersRepositorie.Insert(&usersEntitie, nil); err != nil {
+	if err := usersRepositorie.Insert(usersEntitie, nil); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()
@@ -111,10 +111,10 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	usersRepositorie := repo.NewUsersRepositorie(ctx, s.db)
 	usersEntitie := entitie.UsersEntitie{}
 
-	err := usersRepositorie.FindOne(&usersEntitie).Column("id").
+	err := usersRepositorie.FindOne().Column("id").
 		Where("deleted_at IS NULL").
 		Where("id = ?", req.Body.ID).
-		Scan(ctx)
+		Scan(ctx, &usersEntitie)
 
 	if err != nil && err != sql.ErrNoRows {
 		res.StatCode = http.StatusInternalServerError
@@ -143,7 +143,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	usersEntitie.PostalCode = req.Body.PostalCode
 	usersEntitie.UpdatedAt = zero.TimeFrom(time.Now())
 
-	if err := usersRepositorie.Update(&usersEntitie, &usersEntitie); err != nil {
+	if err := usersRepositorie.Update(usersEntitie, &usersEntitie); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()

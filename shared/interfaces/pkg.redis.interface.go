@@ -11,4 +11,5 @@ type IRedis interface {
 	Exists(key string) (int64, error)
 	HSetEx(key string, expiration time.Duration, values ...any) error
 	HGet(key string, field string) ([]byte, error)
+	IncrBy(key string, value int) (int, error)
 }

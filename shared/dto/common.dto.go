@@ -34,6 +34,15 @@ type (
 		CONTROLLER T
 	}
 
+	SchedulerOptions struct {
+		CTX  context.Context
+		ENV  Request[Environtment]
+		DB   *bun.DB
+		RDS  *redis.Client
+		AMQP *rabbitmq.Conn
+		MLS  meilisearch.ServiceManager
+	}
+
 	WorkerOptions struct {
 		CTX  context.Context
 		ENV  Request[Environtment]
@@ -50,5 +59,16 @@ type (
 		AMQP   *rabbitmq.Conn
 		MLS    meilisearch.ServiceManager
 		ROUTER chi.Router
+	}
+)
+
+type (
+	SleepBackoff struct {
+		Ctx     context.Context
+		Redis   *redis.Client
+		Key     string
+		Count   int
+		Retry   int
+		Backoff int
 	}
 )

@@ -20,7 +20,7 @@ import (
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
 
-type workerSearch struct {
+type searchWorker struct {
 	ctx  context.Context
 	env  dto.Request[dto.Environtment]
 	db   *bun.DB
@@ -30,14 +30,14 @@ type workerSearch struct {
 }
 
 func NewSearchWorker(options dto.WorkerOptions) inf.ISearchWorker {
-	return workerSearch{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
+	return searchWorker{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
 }
 
-func (w workerSearch) searchRabbitInstance() inf.IRabbitMQ {
+func (w searchWorker) searchRabbitInstance() inf.IRabbitMQ {
 	return pkg.NewRabbitMQ(w.ctx, w.amqp)
 }
 
-func (w workerSearch) searchChangeDataCapture() error {
+func (w searchWorker) searchChangeDataCapture() error {
 	key := "WORKER:SEARCH:CDC"
 	value := time.Now().Format(cons.DATE_TIME_FORMAT)
 
@@ -60,7 +60,7 @@ func (w workerSearch) searchChangeDataCapture() error {
 	return nil
 }
 
-func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, req *dto.RabbitDeadLetterQueueOptions) error {
+func (w searchWorker) searchDeadLetterQueue(amqp inf.IRabbitMQ, req *dto.RabbitDeadLetterQueueOptions) error {
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 	amqp_req.Option.ExchangeName = req.Exchange
 	amqp_req.Option.ExchangeType = req.ExchangeType
@@ -86,7 +86,35 @@ func (w workerSearch) searchDeadLetterQueue(amqp inf.IRabbitMQ, req *dto.RabbitD
 	return nil
 }
 
-func (w workerSearch) searchConsumer() {
+func (w searchWorker) searchHandler(req dto.Request[dto.MeiliSearchDocuments[map[string]any]]) error {
+	mls := pkg.NewMeiliSearch(w.ctx, w.mls)
+
+	switch req.Body.Action {
+
+	case cons.INSERT:
+		if _, err := mls.Insert(req.Body.Doc, &req.Body.Data); err != nil {
+			return err
+		}
+		return nil
+
+	case cons.UPDATE:
+		if _, err := mls.Update(req.Body.Doc, req.Body.ID.(string), &req.Body.Data); err != nil {
+			return err
+		}
+		return nil
+
+	case cons.DELETE:
+		if _, err := mls.Delete(req.Body.Doc, req.Body.ID.(string)); err != nil {
+			return err
+		}
+		return nil
+
+	default:
+		return errors.New("Meilisearch unknown action")
+	}
+}
+
+func (w searchWorker) searchConsumer() {
 	amqp := w.searchRabbitInstance()
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
@@ -127,6 +155,8 @@ func (w workerSearch) searchConsumer() {
 		}
 
 		if dlq_req.Body.Data != nil && dlq_req.Error != nil {
+			pkg.Logrus(cons.ERROR, dlq_req.Error)
+
 			dlq_req.Exchange = amqp_req.Option.ExchangeName
 			dlq_req.ExchangeType = amqp_req.Option.ExchangeType
 			dlq_req.Queue = amqp_req.Option.QueueName
@@ -143,35 +173,7 @@ func (w workerSearch) searchConsumer() {
 	})
 }
 
-func (w workerSearch) searchHandler(req dto.Request[dto.MeiliSearchDocuments[map[string]any]]) error {
-	// mls := pkg.NewMeiliSearch(w.ctx, w.mls)
-
-	switch req.Body.Action {
-
-	// case cons.INSERT:
-	// 	if _, err := mls.Insert(req.Body.Doc, &req.Body.Data); err != nil {
-	// 		return err
-	// 	}
-	// 	return nil
-
-	// case cons.UPDATE:
-	// 	if _, err := mls.Update(req.Body.Doc, req.Body.ID.(string), &req.Body.Data); err != nil {
-	// 		return err
-	// 	}
-	// 	return nil
-
-	// case cons.DELETE:
-	// 	if _, err := mls.Delete(req.Body.Doc, req.Body.ID.(string)); err != nil {
-	// 		return err
-	// 	}
-	// 	return nil
-
-	default:
-		return errors.New("Meilisearch unknown action")
-	}
-}
-
-func (w workerSearch) searchSignal() {
+func (w searchWorker) searchSignal() {
 	now := time.Now().Format(cons.DATE_TIME_FORMAT)
 
 	ch := make(chan os.Signal, 1)
@@ -183,21 +185,21 @@ func (w workerSearch) searchSignal() {
 			pkg.Logrus(cons.INFO, "%s - Worker search is received signal: %s", now, sig.String())
 
 			if w.env.Config.APP.ENV != cons.DEV {
-				time.Sleep(time.Second * 3)
-			} else {
 				time.Sleep(time.Second * 10)
+			} else {
+				time.Sleep(time.Second * 15)
 			}
 
 			os.Exit(0)
 
 		default:
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 5)
 			pkg.Logrus(cons.INFO, "%s - Worker search is running...", now)
 		}
 	}
 }
 
-func (w workerSearch) SearchRun() {
+func (w searchWorker) SearchRun() {
 	w.searchConsumer()
 	w.searchSignal()
 }

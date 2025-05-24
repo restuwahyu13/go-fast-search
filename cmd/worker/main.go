@@ -16,6 +16,7 @@ import (
 
 	config "github.com/restuwahyu13/go-fast-search/configs"
 	con "github.com/restuwahyu13/go-fast-search/internal/infrastructure/connections"
+	scheduler "github.com/restuwahyu13/go-fast-search/internal/infrastructure/schedulers"
 	worker "github.com/restuwahyu13/go-fast-search/internal/infrastructure/workers"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
@@ -119,7 +120,19 @@ func NewWorker(req dto.Request[Worker]) IWorker {
 }
 
 func (i Worker) Register(wg *sync.WaitGroup) {
-	wg.Add(2)
+	wg.Add(3)
+
+	go func() {
+		defer wg.Done()
+		scheduler.NewSearchScheduler(dto.SchedulerOptions{
+			CTX:  i.CTX,
+			ENV:  i.ENV,
+			DB:   i.DB,
+			RDS:  i.RDS,
+			AMQP: i.AMQP,
+			MLS:  i.MLS,
+		}).Run()
+	}()
 
 	go func() {
 		defer wg.Done()

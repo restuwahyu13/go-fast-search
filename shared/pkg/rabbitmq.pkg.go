@@ -133,7 +133,6 @@ func (h *rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Con
 
 	go func() {
 		<-closeChan
-		close(closeChan)
 
 		if consumer != nil {
 			consumer.Close()
@@ -141,6 +140,10 @@ func (h *rabbitmq) closeConnection(publisher *amqp.Publisher, consumer *amqp.Con
 
 		if publisher != nil {
 			publisher.Close()
+		}
+
+		if connection != nil {
+			connection.Close()
 		}
 	}()
 }

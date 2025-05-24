@@ -1,6 +1,10 @@
 package helper
 
 import (
+	"math"
+	"time"
+
+	"github.com/sirupsen/logrus"
 	"github.com/wagslane/go-rabbitmq"
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
@@ -30,4 +34,30 @@ func MeiliSearchPublisher[T any](amqp inf.IRabbitMQ, secret string, id any, data
 	}
 
 	return nil
+}
+
+func SleepBackoff(req dto.Request[dto.SleepBackoff]) {
+	cmd := req.Config.Redis.IncrBy(req.Body.Ctx, req.Body.Key, int64(req.Body.Count))
+	if cmd.Err() != nil {
+		logrus.Error(cmd.Err())
+		return
+	}
+
+	count := int(cmd.Val())
+
+	if count >= req.Body.Retry {
+		cmd := req.Config.Redis.Set(req.Body.Ctx, req.Body.Key, req.Body.Count, 0)
+		if cmd.Err() != nil {
+			logrus.Error(cmd.Err())
+			return
+		}
+
+		waitoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
+		time.Sleep(waitoff)
+	}
+
+	if count <= req.Body.Retry {
+		backoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
+		time.Sleep(backoff)
+	}
 }

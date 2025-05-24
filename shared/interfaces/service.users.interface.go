@@ -14,10 +14,10 @@ import (
 
 type (
 	IUsersRepositorie interface {
-		Find(dest any) *bun.SelectQuery
-		FindOne(dest any) *bun.SelectQuery
-		Insert(entitie any, dest any) error
-		Update(entitie any, dest any) error
+		Find() *bun.SelectQuery
+		FindOne() *bun.SelectQuery
+		Insert(entitie entitie.UsersEntitie, dest any) error
+		Update(entitie entitie.UsersEntitie, dest any) error
 		Delete(id string, dest any) error
 	}
 

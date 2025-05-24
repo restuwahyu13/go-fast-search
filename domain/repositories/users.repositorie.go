@@ -40,26 +40,16 @@ func NewUsersRepositorie(ctx context.Context, db *bun.DB) inf.IUsersRepositorie 
 	return usersRepositorie{ctx: ctx, db: db, entitie: new(entitie.UsersEntitie)}
 }
 
-func (r usersRepositorie) Find(dest any) *bun.SelectQuery {
-	users := []entitie.UsersEntitie{}
-
-	if dest != nil {
-		return r.db.NewSelect().Model(dest)
-	}
-
-	return r.db.NewSelect().Model(&users)
-}
-
-func (r usersRepositorie) FindOne(dest any) *bun.SelectQuery {
-	if dest != nil {
-		return r.db.NewSelect().Model(dest)
-	}
-
+func (r usersRepositorie) Find() *bun.SelectQuery {
 	return r.db.NewSelect().Model(r.entitie)
 }
 
-func (r usersRepositorie) Insert(entitie, dest any) error {
-	sqlb := r.db.NewInsert().Model(entitie)
+func (r usersRepositorie) FindOne() *bun.SelectQuery {
+	return r.db.NewSelect().Model(r.entitie)
+}
+
+func (r usersRepositorie) Insert(entitie entitie.UsersEntitie, dest any) error {
+	sqlb := r.db.NewInsert().Model(&entitie)
 
 	if dest != nil {
 		result, err := sqlb.Returning("*", dest).Exec(r.ctx)
@@ -92,8 +82,8 @@ func (r usersRepositorie) Insert(entitie, dest any) error {
 	return nil
 }
 
-func (r usersRepositorie) Update(entitie, dest any) error {
-	sqlb := r.db.NewUpdate().Model(entitie)
+func (r usersRepositorie) Update(entitie entitie.UsersEntitie, dest any) error {
+	sqlb := r.db.NewUpdate().Model(&entitie)
 
 	if dest != nil {
 		result, err := sqlb.Returning("*", dest).OmitZero().Exec(r.ctx)

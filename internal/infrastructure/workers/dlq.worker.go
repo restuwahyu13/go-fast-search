@@ -2,9 +2,10 @@ package worker
 
 import (
 	"context"
-	"math"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
 
-type workerDeadLetterQueue struct {
+type deadLetterQueueWorker struct {
 	ctx  context.Context
 	env  dto.Request[dto.Environtment]
 	db   *bun.DB
@@ -30,14 +31,14 @@ type workerDeadLetterQueue struct {
 }
 
 func NewDeadLetterQueueWorker(options dto.WorkerOptions) inf.IDeadLetterQueueWorker {
-	return workerDeadLetterQueue{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
+	return deadLetterQueueWorker{ctx: options.CTX, env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
 }
 
-func (w workerDeadLetterQueue) deadLetterQueueRabbitInstance() inf.IRabbitMQ {
+func (w deadLetterQueueWorker) deadLetterQueueRabbitInstance() inf.IRabbitMQ {
 	return pkg.NewRabbitMQ(w.ctx, w.amqp)
 }
 
-func (w workerDeadLetterQueue) deadLetterQueueConsumer() {
+func (w deadLetterQueueWorker) deadLetterQueueConsumer() {
 	amqp := w.deadLetterQueueRabbitInstance()
 	amqp_req := dto.Request[dto.RabbitOptions]{}
 
@@ -45,7 +46,6 @@ func (w workerDeadLetterQueue) deadLetterQueueConsumer() {
 	amqp_req.Option.ExchangeType = cons.EXCHANGE_TYPE_DIRECT
 	amqp_req.Option.QueueName = cons.QUEUE_NAME_DEAD_LETTER_QUEUE
 	amqp_req.Option.Prefetch = 1
-	amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: w.env.Config.RABBITMQ.SECRET}
 
 	amqp.Consumer(amqp_req, func(d rabbitmq.Delivery) (action rabbitmq.Action) {
 		if d.Headers[cons.X_RABBIT_UNKNOWN] == cons.TRUE && d.Headers[cons.X_RABBIT_SECRET] != w.env.Config.RABBITMQ.SECRET {
@@ -53,36 +53,40 @@ func (w workerDeadLetterQueue) deadLetterQueueConsumer() {
 			return rabbitmq.NackDiscard
 		}
 
-		pkg.Logrus(cons.INFO, "Before queue is allowed to be consumed: %s", string(d.Body))
-
 		parser := helper.NewParser()
 		if err := parser.Unmarshal(d.Body, &amqp_req); err != nil {
 			return rabbitmq.NackDiscard
 		}
 
-		count := 0
-		retry := 10
-		backoff := time.Duration(math.Pow(2, float64(count))) * time.Second
-
-		if count <= retry {
-			count++
-			time.Sleep(backoff)
-		}
-
-		pkg.Logrus(cons.INFO, "After queue is allowed to be consumed: %#v", amqp_req.Option)
-
 		if amqp_req.Option.Body != nil {
+			amqp_req.Option.Args = rabbitmq.Table{cons.X_RABBIT_SECRET: w.env.Config.RABBITMQ.SECRET, cons.X_MESSAGE_TTL: 15}
+
+			key := fmt.Sprintf("%s", strings.ToUpper(amqp_req.Option.QueueName))
+			req := dto.Request[dto.SleepBackoff]{}
+
+			req.Body.Ctx = w.ctx
+			req.Config.Redis = w.rds
+			req.Body.Key = key
+			req.Body.Count = 1
+			req.Body.Retry = 5
+			req.Body.Backoff = 5
+
+			helper.SleepBackoff(req)
+
 			if err := amqp.Publisher(amqp_req); err != nil {
 				pkg.Logrus(cons.ERROR, err)
 				return rabbitmq.NackDiscard
 			}
+
+			pkg.Logrus(cons.INFO, "Queue is allowed to be consumed: %s", string(d.Body))
+			return rabbitmq.Ack
 		}
 
-		return rabbitmq.Ack
+		return rabbitmq.NackDiscard
 	})
 }
 
-func (w workerDeadLetterQueue) signalDeadLetterQueue() inf.IRedis {
+func (w deadLetterQueueWorker) signalDeadLetterQueue() inf.IRedis {
 	now := time.Now().Format(cons.DATE_TIME_FORMAT)
 
 	ch := make(chan os.Signal, 1)
@@ -91,24 +95,24 @@ func (w workerDeadLetterQueue) signalDeadLetterQueue() inf.IRedis {
 	for {
 		select {
 		case sig := <-ch:
-			pkg.Logrus(cons.INFO, "%s - Worker dql is received signal: %s", now, sig.String())
+			pkg.Logrus(cons.INFO, "%s - Worker dlq is received signal: %s", now, sig.String())
 
 			if w.env.Config.APP.ENV != cons.DEV {
-				time.Sleep(time.Second * 3)
-			} else {
 				time.Sleep(time.Second * 10)
+			} else {
+				time.Sleep(time.Second * 15)
 			}
 
 			os.Exit(0)
 
 		default:
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 5)
 			pkg.Logrus(cons.INFO, "%s - Worker dlq is running...", now)
 		}
 	}
 }
 
-func (w workerDeadLetterQueue) DeadLetterQueueRun() {
+func (w deadLetterQueueWorker) DeadLetterQueueRun() {
 	w.deadLetterQueueConsumer()
 	w.signalDeadLetterQueue()
 }
