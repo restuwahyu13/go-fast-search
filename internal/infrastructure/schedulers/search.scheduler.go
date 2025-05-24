@@ -3,7 +3,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/meilisearch/meilisearch-go"
@@ -171,7 +170,7 @@ func (s searchScheduler) Run() {
 	sync := 10
 
 	sch, _, err := cron.Handler("search scheduler", crontime, func() {
-		pkg.Logrus(cons.INFO, fmt.Sprintf("Searhc scheduler is running %s - and execute at %s", now, crontime))
+		pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler is running %s - and execute at %s", now, crontime))
 
 		result, err := rds.IncrBy(key, value)
 		if err != nil {
@@ -180,12 +179,28 @@ func (s searchScheduler) Run() {
 		}
 
 		if result >= sync {
-			if err := rds.Set(key, value); err != nil {
+			breakTime := time.Duration(time.Second * 180)
+			pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler break when equal max %d, running again after %d minute is over", sync, int64(breakTime.Minutes())))
+
+			ttl, err := rds.TTL(key, int(breakTime.Seconds()))
+			if err != nil {
 				pkg.Logrus(cons.ERROR, err)
 				return
 			}
 
-			time.Sleep(time.Duration(math.Pow(float64(result), float64(result))) * time.Second)
+			if ttl < 1 {
+				if err := rds.SetEx(key, breakTime, result); err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+			} else if ttl > 1 && ttl < 3 {
+				if err := rds.Set(key, value); err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+			}
 		}
 
 		if result <= sync {

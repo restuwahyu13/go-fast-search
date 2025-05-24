@@ -47,14 +47,14 @@ func SleepBackoff(req dto.Request[dto.SleepBackoff]) {
 	count := int(cmd.Val())
 
 	if count >= req.Body.Retry {
+		waitoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
+		time.Sleep(waitoff)
+
 		cmd := req.Config.Redis.Set(req.Body.Ctx, req.Body.Key, req.Body.Count, 0)
 		if cmd.Err() != nil {
 			logrus.Error(cmd.Err())
 			return
 		}
-
-		waitoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
-		time.Sleep(waitoff)
 	}
 
 	if count <= req.Body.Retry {
