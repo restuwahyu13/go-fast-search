@@ -22,7 +22,7 @@ abuild:
 	${GO} mod tidy
 	${GO} mod verify
 	${GO} vet --race -v ./cmd/api
-	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o main ./cmd/api
+	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o api ./cmd/api
 
 .PHONY: wdev
 wdev:
@@ -33,7 +33,7 @@ wbuild:
 	${GO} mod tidy
 	${GO} mod verify
 	${GO} vet --race -v ./cmd/api
-	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o main ./cmd/worker
+	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o worker ./cmd/worker
 
 
 .PHONY: test

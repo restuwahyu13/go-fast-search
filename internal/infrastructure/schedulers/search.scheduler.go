@@ -55,9 +55,11 @@ func (s searchScheduler) searchHandler(rds inf.IRedis) {
 		usersEntities := []entitie.UsersEntitie{}
 
 		err = usersRepositorie.Find().Column("*").
-			WhereGroup("AND", func(sqlb *bun.SelectQuery) *bun.SelectQuery {
-				sqlb.Where("deleted_at IS NULL AND updated_at IS NULL AND created_at > ?", start_at)
-				sqlb.WhereOr("deleted_at IS NULL AND updated_at > ?", start_at)
+			Where("deleted_at IS NULL").
+			WhereGroup(cons.AND, func(sqlb *bun.SelectQuery) *bun.SelectQuery {
+				sqlb.Where("updated_at IS NULL AND created_at > ?", start_at)
+				sqlb.WhereOr("updated_at > ?", start_at)
+
 				return sqlb
 			}).
 			Order("created_at DESC").

@@ -4,6 +4,7 @@ services:
   ### ===================================
   api:
     container_name: go-api
+    command: ./api
     restart: always
     build:
       context: .
@@ -20,6 +21,31 @@ services:
       - db
       - cache
     ports:
+      - 3000:3000
+    networks:
+       - go-network
+  ### ===================================
+  ### WORKER SERVICE TERITORY
+  ### ===================================
+  worker:
+    container_name: go-worker
+    command: ./worker
+    restart: always
+    build:
+      context: .
+      dockerfile: external/deployments/Dockerfile
+    healthcheck:
+      interval: 120ms
+      start_period: 60ms
+      timeout: 30ms
+      retries: 3
+      test: env | grep $HOME
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - cache
+    expose:
       - 3000:3000
     networks:
        - go-network
@@ -63,6 +89,9 @@ services:
   search:
     image: getmeili/meilisearch:latest
     restart: always
+    command:
+     - "--http-payload-size-limit"
+     - "200MB"
     healthcheck:
       interval: 120ms
       start_period: 60ms

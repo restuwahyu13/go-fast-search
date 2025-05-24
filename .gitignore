@@ -81,3 +81,5 @@ ehthumbs.db
 Desktop.ini
 ._*
 main
+worker
+api

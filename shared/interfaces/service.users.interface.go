@@ -22,7 +22,7 @@ type (
 	}
 
 	IUsersMeiliSearchRepositorie interface {
-		Search(query string, attributes []string, filter *meilisearch.SearchRequest) (*opt.UsersSearch, error)
+		Search(query string, attributes []string, filter *meilisearch.SearchRequest) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
 		Find(filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
 		FindOne(id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error)
 		Insert(value any) error

@@ -26,6 +26,3 @@ COPY --from=builder /app/main .
 RUN apk update \
     && apk upgrade -y \
     && apk add --no-cache tzdata ca-certificates
-
-EXPOSE 3000
-ENTRYPOINT ["./main"]

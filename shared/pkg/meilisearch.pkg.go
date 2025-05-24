@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"reflect"
 	"slices"
 	"time"
@@ -12,6 +11,7 @@ import (
 	search "github.com/meilisearch/meilisearch-go"
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
+	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 )
 
@@ -117,8 +117,13 @@ func (p meilisearch) Like(doc string, query string, filter *search.SearchRequest
 		return err
 	}
 
-	dest, err := p.meilisearch.Index(doc).SearchWithContext(p.ctx, query, filter)
+	result, err := p.meilisearch.Index(doc).SearchWithContext(p.ctx, query, filter)
 	if err != nil {
+		return err
+	}
+
+	transform := helper.NewTransform()
+	if err := transform.SrcToDest(result, dest); err != nil {
 		return err
 	}
 
@@ -261,8 +266,6 @@ func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([
 	}
 
 	if idx == -1 {
-		fmt.Println("request", request)
-
 		task, err := p.meilisearch.Index(doc).UpdateFilterableAttributesWithContext(p.ctx, &request)
 		if err != nil {
 			return nil, err

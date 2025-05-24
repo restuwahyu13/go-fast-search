@@ -38,23 +38,18 @@ func (w searchWorker) searchRabbitInstance() inf.IRabbitMQ {
 }
 
 func (w searchWorker) searchChangeDataCapture() error {
+	now := time.Now()
+
 	key := "WORKER:SEARCH:CDC"
-	value := time.Now().Format(cons.DATE_TIME_FORMAT)
+	value := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute()-10, now.Second(), now.Nanosecond(), now.Location()).Format(time.RFC3339)
 
 	rds, err := pkg.NewRedis(w.ctx, w.rds)
 	if err != nil {
 		return err
 	}
 
-	isExist, err := rds.Exists(key)
-	if err != nil {
+	if err := rds.Set(key, value); err != nil {
 		return err
-	}
-
-	if isExist < 1 {
-		if err := rds.Set(key, value); err != nil {
-			return err
-		}
 	}
 
 	return nil

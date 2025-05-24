@@ -246,7 +246,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 func (s usersService) FindAllUsers(ctx context.Context) (res opt.Response) {
 	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
 
-	usersDocResult, err := usersRepositorie.Find(&meilisearch.DocumentsQuery{})
+	usersDocResult, err := usersRepositorie.Search("", nil, &meilisearch.SearchRequest{Limit: 10, Offset: 0})
 	if err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()

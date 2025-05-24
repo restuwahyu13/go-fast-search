@@ -21,8 +21,9 @@
 		"npm": ">= 10.x.x"
 	},
 	"devDependencies": {
-		"bcrypt": "^6.0.0",
+		"@faker-js/faker": "^9.8.0",
 		"dotenv": "^16.5.0",
+		"meilisearch": "^0.50.0",
 		"pg": "^8.13.3",
 		"rimraf": "^6.0.1",
 		"sequelize": "^6.37.5",
