@@ -2,6 +2,7 @@ package helper
 
 import (
 	"math"
+	"reflect"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -60,4 +61,26 @@ func SleepBackoff(req dto.Request[dto.SleepBackoff]) {
 		backoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
 		time.Sleep(backoff)
 	}
+}
+
+func TimeStampToUnix(timestamp any) (int64, error) {
+	var tparse time.Time
+
+	if reflect.TypeOf(timestamp).Kind() == reflect.String {
+		originalLayout := time.RFC3339
+
+		tparse, err := time.Parse(originalLayout, timestamp.(string))
+		if err != nil {
+			return -1, err
+		}
+
+		return tparse.Unix(), nil
+	}
+
+	tparse, err := time.Parse(time.RFC3339, timestamp.(time.Time).String())
+	if err != nil {
+		return -1, err
+	}
+
+	return tparse.Unix(), nil
 }

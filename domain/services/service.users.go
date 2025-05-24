@@ -78,7 +78,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersEntitie.Country = req.Body.Country
 	usersEntitie.PostalCode = req.Body.PostalCode
 
-	if err := usersRepositorie.Insert(usersEntitie, nil); err != nil {
+	if err := usersRepositorie.Insert(usersEntitie, &usersEntitie); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()
@@ -92,9 +92,44 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 		return
 	}
 
+	createdAtUnix, err := helper.TimeStampToUnix(usersEntitie.CreatedAt.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	updatedAtUnix, err := helper.TimeStampToUnix(usersEntitie.UpdatedAt.Time.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	deletedAtUnix, err := helper.TimeStampToUnix(usersEntitie.DeletedAt.Time.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	usersDocEntitie := entitie.UsersDocument{}
+	usersDocEntitie.ID = usersEntitie.ID
+	usersDocEntitie.Name = usersEntitie.Name
+	usersDocEntitie.Email = usersEntitie.Email
+	usersDocEntitie.Phone = usersEntitie.Phone
+	usersDocEntitie.DateOfBirth = usersEntitie.DateOfBirth
+	usersDocEntitie.Age = usersEntitie.Age
+	usersDocEntitie.Address = usersEntitie.Address
+	usersDocEntitie.City = usersEntitie.City
+	usersDocEntitie.State = usersEntitie.State
+	usersDocEntitie.Direction = usersEntitie.Direction
+	usersDocEntitie.Country = usersEntitie.Country
+	usersDocEntitie.PostalCode = usersEntitie.PostalCode
+	usersDocEntitie.CreatedAt = createdAtUnix
+	usersDocEntitie.UpdatedAt = updatedAtUnix
+	usersDocEntitie.DeletedAt = deletedAtUnix
+
 	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
 
-	if err := helper.MeiliSearchPublisher[entitie.UsersEntitie](amqp, s.env.Config.RABBITMQ.SECRET, nil, usersEntitie, cons.FALSE, cons.INSERT); err != nil {
+	if err := helper.MeiliSearchPublisher[entitie.UsersDocument](amqp, s.env.Config.RABBITMQ.SECRET, nil, usersDocEntitie, cons.FALSE, cons.INSERT); err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()
 
@@ -157,9 +192,44 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 		return
 	}
 
+	createdAtUnix, err := helper.TimeStampToUnix(usersEntitie.CreatedAt.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	updatedAtUnix, err := helper.TimeStampToUnix(usersEntitie.UpdatedAt.Time.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	deletedAtUnix, err := helper.TimeStampToUnix(usersEntitie.DeletedAt.Time.Format(time.RFC3339))
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	usersDocEntitie := entitie.UsersDocument{}
+	usersDocEntitie.ID = usersEntitie.ID
+	usersDocEntitie.Name = usersEntitie.Name
+	usersDocEntitie.Email = usersEntitie.Email
+	usersDocEntitie.Phone = usersEntitie.Phone
+	usersDocEntitie.DateOfBirth = usersEntitie.DateOfBirth
+	usersDocEntitie.Age = usersEntitie.Age
+	usersDocEntitie.Address = usersEntitie.Address
+	usersDocEntitie.City = usersEntitie.City
+	usersDocEntitie.State = usersEntitie.State
+	usersDocEntitie.Direction = usersEntitie.Direction
+	usersDocEntitie.Country = usersEntitie.Country
+	usersDocEntitie.PostalCode = usersEntitie.PostalCode
+	usersDocEntitie.CreatedAt = createdAtUnix
+	usersDocEntitie.UpdatedAt = updatedAtUnix
+	usersDocEntitie.DeletedAt = deletedAtUnix
+
 	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
 
-	if err := helper.MeiliSearchPublisher[entitie.UsersEntitie](amqp, s.env.Config.RABBITMQ.SECRET, req.Body.ID, usersEntitie, cons.FALSE, cons.UPDATE); err != nil {
+	if err := helper.MeiliSearchPublisher[entitie.UsersDocument](amqp, s.env.Config.RABBITMQ.SECRET, req.Body.ID, usersDocEntitie, cons.FALSE, cons.UPDATE); err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()
 

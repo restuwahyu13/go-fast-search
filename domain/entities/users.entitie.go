@@ -28,20 +28,20 @@ type (
 	}
 
 	UsersDocument struct {
-		ID          string    `json:"id"`
-		Name        string    `json:"name" `
-		Email       string    `json:"email" `
-		Phone       string    `json:"phone"`
-		DateOfBirth string    `json:"date_of_birth"`
-		Age         string    `json:"age"`
-		Address     string    `json:"address"`
-		City        string    `json:"city"`
-		State       string    `json:"state"`
-		Direction   string    `json:"direction"`
-		Country     string    `json:"country"`
-		PostalCode  string    `json:"postal_code"`
-		CreatedAt   time.Time `json:"created_at"`
-		UpdatedAt   zero.Time `json:"updated_at"`
-		DeletedAt   zero.Time `json:"deleted_at"`
+		ID          string `json:"id"`
+		Name        string `json:"name" `
+		Email       string `json:"email" `
+		Phone       string `json:"phone"`
+		DateOfBirth string `json:"date_of_birth"`
+		Age         string `json:"age"`
+		Address     string `json:"address"`
+		City        string `json:"city"`
+		State       string `json:"state"`
+		Direction   string `json:"direction"`
+		Country     string `json:"country"`
+		PostalCode  string `json:"postal_code"`
+		CreatedAt   int64  `json:"created_at"`
+		UpdatedAt   int64  `json:"updated_at"`
+		DeletedAt   int64  `json:"deleted_at"`
 	}
 )

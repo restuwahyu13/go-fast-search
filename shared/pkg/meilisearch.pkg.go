@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"time"
@@ -244,4 +245,39 @@ func (p meilisearch) BulkDelete(doc string, ids ...string) (*search.TaskInfo, er
 	}
 
 	return task, nil
+}
+
+func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([]string, error) {
+	attributesPtr, err := p.meilisearch.Index(doc).GetFilterableAttributes()
+	if err != nil {
+		return nil, err
+	}
+
+	idx := 0
+	for _, attribute := range request {
+		if slices.Index(*attributesPtr, attribute) == -1 {
+			idx = -1
+		}
+	}
+
+	if idx == -1 {
+		fmt.Println("request", request)
+
+		task, err := p.meilisearch.Index(doc).UpdateFilterableAttributesWithContext(p.ctx, &request)
+		if err != nil {
+			return nil, err
+		}
+
+		if task.TaskUID < 1 {
+			return nil, cons.NO_ROWS_AFFECTED
+		}
+
+		if _, err := p.meilisearch.WaitForTaskWithContext(p.ctx, task.TaskUID, time.Duration(time.Second*3)); err != nil {
+			return nil, err
+		}
+
+		return request, nil
+	}
+
+	return *attributesPtr, nil
 }

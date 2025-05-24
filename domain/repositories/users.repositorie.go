@@ -164,6 +164,39 @@ func NewUsersMeilisearchRepositorie(ctx context.Context, db meilisearch.ServiceM
 	return usersMeilisearchRepositorie{ctx: ctx, meilisearch: meilisearch, doc: new(entitie.UsersDocument)}
 }
 
+func (r usersMeilisearchRepositorie) Search(query string, attributes []string, filter *meilisearch.SearchRequest) (*opt.UsersSearch, error) {
+	parser := helper.NewParser()
+
+	result := new(meilisearch.SearchResponse)
+	res := new(opt.UsersSearch)
+
+	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
+		return nil, err
+	}
+
+	if attributes != nil {
+		if _, err := r.meilisearch.CreateFilterableAttributes("users", attributes); err != nil {
+			return nil, err
+		}
+	}
+
+	err := r.meilisearch.Like("users", query, filter, result)
+	if err != nil {
+		return nil, err
+	}
+
+	resultByte, err := parser.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := parser.Unmarshal(resultByte, res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (r usersMeilisearchRepositorie) Find(filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
 	transform := helper.NewTransform()
 
@@ -184,33 +217,6 @@ func (r usersMeilisearchRepositorie) Find(filter *meilisearch.DocumentsQuery) (*
 	}
 
 	return docResultReformat, nil
-}
-
-func (r usersMeilisearchRepositorie) Search(query string, filter *meilisearch.SearchRequest) (*opt.UsersSearch, error) {
-	parser := helper.NewParser()
-
-	result := new(meilisearch.SearchResponse)
-	res := new(opt.UsersSearch)
-
-	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
-		return nil, err
-	}
-
-	err := r.meilisearch.Like("users", query, filter, result)
-	if err != nil {
-		return nil, err
-	}
-
-	resultByte, err := parser.Marshal(result)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := parser.Unmarshal(resultByte, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func (r usersMeilisearchRepositorie) FindOne(id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error) {

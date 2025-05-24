@@ -15,6 +15,7 @@ import (
 	repo "github.com/restuwahyu13/go-fast-search/domain/repositories"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
+	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	"github.com/restuwahyu13/go-fast-search/shared/pkg"
 )
@@ -33,7 +34,6 @@ func NewSearchScheduler(options dto.SchedulerOptions) inf.ISearchScheduler {
 }
 
 func (s searchScheduler) searchHandler(rds inf.IRedis) {
-
 	key := "WORKER:SEARCH:CDC"
 
 	isExists, err := rds.Exists(key)
@@ -75,19 +75,74 @@ func (s searchScheduler) searchHandler(rds inf.IRedis) {
 			usersRepositorie := repo.NewUsersMeilisearchRepositorie(s.ctx, s.mls)
 
 			for _, userEntity := range usersEntities {
-				usersDoc, err := usersRepositorie.FindOne(userEntity.ID, &meilisearch.DocumentQuery{Fields: []string{"id"}})
+				createdAtUnix, err := helper.TimeStampToUnix(userEntity.CreatedAt.Format(time.RFC3339))
 				if err != nil {
 					pkg.Logrus(cons.ERROR, err)
 					return
 				}
 
-				if usersDoc == nil {
-					if err := usersRepositorie.Insert(userEntity); err != nil {
+				updatedAtUnix, err := helper.TimeStampToUnix(userEntity.UpdatedAt.Time.Format(time.RFC3339))
+				if err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+				deletedAtUnix, err := helper.TimeStampToUnix(userEntity.DeletedAt.Time.Format(time.RFC3339))
+				if err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+				usersDocEntitie := entitie.UsersDocument{}
+				usersDocEntitie.ID = userEntity.ID
+				usersDocEntitie.Name = userEntity.Name
+				usersDocEntitie.Email = userEntity.Email
+				usersDocEntitie.Phone = userEntity.Phone
+				usersDocEntitie.DateOfBirth = userEntity.DateOfBirth
+				usersDocEntitie.Age = userEntity.Age
+				usersDocEntitie.Address = userEntity.Address
+				usersDocEntitie.City = userEntity.City
+				usersDocEntitie.State = userEntity.State
+				usersDocEntitie.Direction = userEntity.Direction
+				usersDocEntitie.Country = userEntity.Country
+				usersDocEntitie.PostalCode = userEntity.PostalCode
+				usersDocEntitie.CreatedAt = createdAtUnix
+				usersDocEntitie.UpdatedAt = updatedAtUnix
+				usersDocEntitie.DeletedAt = deletedAtUnix
+
+				defaultTimeUnix, err := helper.TimeStampToUnix(time.Time{}.Format(time.RFC3339))
+				if err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+				cdcTimeUnix, err := helper.TimeStampToUnix(start_at)
+				if err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+				createdAtFilter := fmt.Sprintf("deleted_at = %d AND updated_at = %d AND created_at > %d", defaultTimeUnix, defaultTimeUnix, cdcTimeUnix)
+				updatedAtFilter := fmt.Sprintf("deleted_at = %d AND updated_at > %d", defaultTimeUnix, cdcTimeUnix)
+
+				filter := fmt.Sprintf("(%s) OR (%s)", createdAtFilter, updatedAtFilter)
+				attributes := []string{"deleted_at", "created_at", "updated_at"}
+
+				filterSearch := meilisearch.SearchRequest{Filter: filter, Limit: 1}
+				usersDoc, err := usersRepositorie.Search("", attributes, &filterSearch)
+
+				if err != nil {
+					pkg.Logrus(cons.ERROR, err)
+					return
+				}
+
+				if usersDoc.Results != nil {
+					if err := usersRepositorie.Update(usersDocEntitie.ID, usersDocEntitie); err != nil {
 						pkg.Logrus(cons.ERROR, err)
 						return
 					}
 				} else {
-					if err := usersRepositorie.Update(userEntity.ID, userEntity); err != nil {
+					if err := usersRepositorie.Insert(usersDocEntitie); err != nil {
 						pkg.Logrus(cons.ERROR, err)
 						return
 					}
