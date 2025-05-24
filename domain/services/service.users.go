@@ -78,7 +78,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersEntitie.Country = req.Body.Country
 	usersEntitie.PostalCode = req.Body.PostalCode
 
-	if err := usersRepositorie.Insert(usersEntitie, &usersEntitie); err != nil {
+	if err := usersRepositorie.Insert(usersEntitie, "id, created_at", &usersEntitie.ID, &usersEntitie.CreatedAt); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()
@@ -178,7 +178,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	usersEntitie.PostalCode = req.Body.PostalCode
 	usersEntitie.UpdatedAt = zero.TimeFrom(time.Now())
 
-	if err := usersRepositorie.Update(usersEntitie, &usersEntitie); err != nil {
+	if err := usersRepositorie.Update(usersEntitie, "*", &usersEntitie); err != nil {
 		if err != cons.NO_ROWS_AFFECTED {
 			res.StatCode = http.StatusInternalServerError
 			res.ErrMsg = err.Error()

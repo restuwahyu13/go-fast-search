@@ -48,11 +48,11 @@ func (r usersRepositorie) FindOne() *bun.SelectQuery {
 	return r.db.NewSelect().Model(r.entitie)
 }
 
-func (r usersRepositorie) Insert(entitie entitie.UsersEntitie, dest any) error {
+func (r usersRepositorie) Insert(entitie entitie.UsersEntitie, column string, dest ...any) error {
 	sqlb := r.db.NewInsert().Model(&entitie)
 
-	if dest != nil {
-		result, err := sqlb.Returning("*", dest).Exec(r.ctx)
+	if column != "" && dest != nil {
+		result, err := sqlb.Returning(column).Exec(r.ctx, dest...)
 		if err != nil {
 			return nil
 
@@ -64,29 +64,29 @@ func (r usersRepositorie) Insert(entitie entitie.UsersEntitie, dest any) error {
 			return cons.NO_ROWS_AFFECTED
 
 		}
-	}
-
-	result, err := sqlb.Exec(r.ctx)
-	if err != nil {
-		return err
-
-	} else if rows, err := result.RowsAffected(); err != nil || rows < 1 {
+	} else {
+		result, err := sqlb.Exec(r.ctx)
 		if err != nil {
 			return err
+
+		} else if rows, err := result.RowsAffected(); err != nil || rows < 1 {
+			if err != nil {
+				return err
+			}
+
+			return cons.NO_ROWS_AFFECTED
+
 		}
-
-		return cons.NO_ROWS_AFFECTED
-
 	}
 
 	return nil
 }
 
-func (r usersRepositorie) Update(entitie entitie.UsersEntitie, dest any) error {
+func (r usersRepositorie) Update(entitie entitie.UsersEntitie, column string, dest ...any) error {
 	sqlb := r.db.NewUpdate().Model(&entitie)
 
-	if dest != nil {
-		result, err := sqlb.Returning("*", dest).OmitZero().Exec(r.ctx)
+	if column != "" && dest != nil {
+		result, err := sqlb.Returning(column).Where("deleted_at IS NULL AND id = ?", entitie.ID).OmitZero().Exec(r.ctx, dest...)
 		if err != nil {
 			return nil
 
@@ -98,19 +98,19 @@ func (r usersRepositorie) Update(entitie entitie.UsersEntitie, dest any) error {
 			return cons.NO_ROWS_AFFECTED
 
 		}
-	}
-
-	result, err := sqlb.OmitZero().Exec(r.ctx)
-	if err != nil {
-		return nil
-
-	} else if rows, err := result.RowsAffected(); err != nil || rows < 1 {
+	} else {
+		result, err := sqlb.Where("deleted_at IS NULL AND id = ?", entitie.ID).OmitZero().Exec(r.ctx)
 		if err != nil {
-			return err
+			return nil
+
+		} else if rows, err := result.RowsAffected(); err != nil || rows < 1 {
+			if err != nil {
+				return err
+			}
+
+			return cons.NO_ROWS_AFFECTED
+
 		}
-
-		return cons.NO_ROWS_AFFECTED
-
 	}
 
 	return nil

@@ -153,10 +153,51 @@ func (s searchScheduler) searchHandler(rds inf.IRedis) {
 	}
 }
 
+func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) {
+	key := "SCHEDULER:SEARCH:BREAK"
+	value := 1
+	sync := 10
+
+	result, err := rds.IncrBy(key, value)
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		return
+	}
+
+	if result >= sync {
+		breakTime := time.Duration(time.Second * 180)
+		pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler break when equal max %d, running again after %d minute is over", sync, int64(breakTime.Minutes())))
+
+		ttl, err := rds.TTL(key, int(breakTime.Seconds()))
+		if err != nil {
+			pkg.Logrus(cons.ERROR, err)
+			return
+		}
+
+		if ttl < 1 {
+			if err := rds.SetEx(key, breakTime, result); err != nil {
+				pkg.Logrus(cons.ERROR, err)
+				return
+			}
+
+		} else if ttl > 1 && ttl < 3 {
+			if err := rds.Set(key, value); err != nil {
+				pkg.Logrus(cons.ERROR, err)
+				return
+			}
+
+		}
+	}
+
+	if result <= sync {
+		handler(rds)
+	}
+}
+
 func (s searchScheduler) Run() {
 	cron := pkg.NewCron()
 
-	crontime := cons.Every15Seconds
+	crontime := cons.Every1Minute
 	now := time.Now().Format(cons.DATE_TIME_FORMAT)
 
 	rds, err := pkg.NewRedis(s.ctx, s.rds)
@@ -165,47 +206,9 @@ func (s searchScheduler) Run() {
 		return
 	}
 
-	key := "SCHEDULER:SEARCH:BREAK"
-	value := 1
-	sync := 10
-
 	sch, _, err := cron.Handler("search scheduler", crontime, func() {
 		pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler is running %s - and execute at %s", now, crontime))
-
-		result, err := rds.IncrBy(key, value)
-		if err != nil {
-			pkg.Logrus(cons.ERROR, err)
-			return
-		}
-
-		if result >= sync {
-			breakTime := time.Duration(time.Second * 180)
-			pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler break when equal max %d, running again after %d minute is over", sync, int64(breakTime.Minutes())))
-
-			ttl, err := rds.TTL(key, int(breakTime.Seconds()))
-			if err != nil {
-				pkg.Logrus(cons.ERROR, err)
-				return
-			}
-
-			if ttl < 1 {
-				if err := rds.SetEx(key, breakTime, result); err != nil {
-					pkg.Logrus(cons.ERROR, err)
-					return
-				}
-
-			} else if ttl > 1 && ttl < 3 {
-				if err := rds.Set(key, value); err != nil {
-					pkg.Logrus(cons.ERROR, err)
-					return
-				}
-
-			}
-		}
-
-		if result <= sync {
-			s.searchHandler(rds)
-		}
+		s.breakRun(rds, s.searchHandler)
 	})
 
 	if err != nil {

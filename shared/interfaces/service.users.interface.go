@@ -16,8 +16,8 @@ type (
 	IUsersRepositorie interface {
 		Find() *bun.SelectQuery
 		FindOne() *bun.SelectQuery
-		Insert(entitie entitie.UsersEntitie, dest any) error
-		Update(entitie entitie.UsersEntitie, dest any) error
+		Insert(entitie entitie.UsersEntitie, column string, dest ...any) error
+		Update(entitie entitie.UsersEntitie, column string, dest ...any) error
 		Delete(id string, dest any) error
 	}
 
