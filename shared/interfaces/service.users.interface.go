@@ -38,23 +38,23 @@ type (
 	}
 
 	IUsersService interface {
-		Ping(ctx context.Context) (res opt.Response)
 		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) (res opt.Response)
 		UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) (res opt.Response)
 		FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) (res opt.Response)
 	}
 
-	IUsersException interface{}
+	IUsersException interface {
+		CreateUsers(key string) string
+		UpdateUsers(key string) string
+	}
 
 	IUsersUsecase interface {
-		Ping(ctx context.Context) opt.Response
 		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) opt.Response
 		UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) opt.Response
 		FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) opt.Response
 	}
 
 	IUsersController interface {
-		Ping(rw http.ResponseWriter, r *http.Request)
 		CreateUsers(rw http.ResponseWriter, r *http.Request)
 		UpdateUsers(rw http.ResponseWriter, r *http.Request)
 		FindAllUsers(rw http.ResponseWriter, r *http.Request)

@@ -2,9 +2,12 @@ package config
 
 import (
 	"context"
+	"errors"
 
+	"github.com/meilisearch/meilisearch-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
+	"github.com/wagslane/go-rabbitmq"
 
 	con "github.com/restuwahyu13/go-fast-search/internal/infrastructure/connections"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
@@ -15,10 +18,12 @@ import (
 
 type (
 	Test struct {
-		CTX context.Context
-		ENV dto.Request[dto.Environtment]
-		DB  *bun.DB
-		RDS *redis.Client
+		CTX  context.Context
+		ENV  dto.Request[dto.Environtment]
+		DB   *bun.DB
+		RDS  *redis.Client
+		AMQP *rabbitmq.Conn
+		MLS  meilisearch.ServiceManager
 	}
 )
 
@@ -50,16 +55,32 @@ func NewTest() Test {
 	if err != nil {
 		pkg.Logrus(cons.FATAL, err)
 	}
+	defer db.Close()
 
 	rds, err := con.RedisConnection(env)
 	if err != nil {
 		pkg.Logrus(cons.FATAL, err)
 	}
+	defer rds.Close()
+
+	amqp, err := con.RabbitConnection(env)
+	if err != nil {
+		pkg.Logrus(cons.FATAL, err)
+	}
+	defer amqp.Close()
+
+	mls := con.MeiliSearchConnection(env)
+	if !mls.IsHealthy() {
+		pkg.Logrus(cons.FATAL, errors.New("meilisearch is not healthy"))
+	}
+	defer mls.Close()
 
 	return Test{
-		CTX: ctx,
-		ENV: env,
-		DB:  db,
-		RDS: rds,
+		CTX:  ctx,
+		ENV:  env,
+		DB:   db,
+		RDS:  rds,
+		AMQP: amqp,
+		MLS:  mls,
 	}
 }

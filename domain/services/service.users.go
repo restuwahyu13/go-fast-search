@@ -13,6 +13,7 @@ import (
 	"github.com/wagslane/go-rabbitmq"
 
 	entitie "github.com/restuwahyu13/go-fast-search/domain/entities"
+	exception "github.com/restuwahyu13/go-fast-search/domain/exceptions"
 	repo "github.com/restuwahyu13/go-fast-search/domain/repositories"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
@@ -34,15 +35,10 @@ func NewUsersService(options dto.ServiceOptions) inf.IUsersService {
 	return usersService{env: options.ENV, db: options.DB, rds: options.RDS, amqp: options.AMQP, mls: options.MLS}
 }
 
-func (s usersService) Ping(ctx context.Context) (res opt.Response) {
-	res.StatCode = http.StatusOK
-	res.Message = "Ping!"
-
-	return
-}
-
 func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) (res opt.Response) {
+	usersException := exception.NewUsersException()
 	usersRepositorie := repo.NewUsersRepositorie(ctx, s.db)
+
 	usersEntitie := entitie.UsersEntitie{}
 
 	err := usersRepositorie.FindOne().Column("id").
@@ -60,7 +56,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 
 	} else if err != sql.ErrNoRows {
 		res.StatCode = http.StatusConflict
-		res.ErrMsg = "User already exists in our system"
+		res.ErrMsg = usersException.CreateUsers("users_exists")
 
 		return
 
@@ -87,7 +83,7 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 		}
 
 		res.StatCode = http.StatusPreconditionFailed
-		res.ErrMsg = "Failed to create new users"
+		res.ErrMsg = usersException.CreateUsers("create_users_failed")
 
 		return
 	}
@@ -143,7 +139,9 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 }
 
 func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) (res opt.Response) {
+	usersException := exception.NewUsersException()
 	usersRepositorie := repo.NewUsersRepositorie(ctx, s.db)
+
 	usersEntitie := entitie.UsersEntitie{}
 
 	err := usersRepositorie.FindOne().Column("id").
@@ -159,7 +157,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 
 	} else if err == sql.ErrNoRows {
 		res.StatCode = http.StatusConflict
-		res.ErrMsg = "User is not exists in our system"
+		res.ErrMsg = usersException.UpdateUsers("users_notfoud")
 
 		return
 
@@ -187,7 +185,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 		}
 
 		res.StatCode = http.StatusPreconditionFailed
-		res.ErrMsg = "Failed to update new users"
+		res.ErrMsg = usersException.UpdateUsers("update_users_failed")
 
 		return
 	}

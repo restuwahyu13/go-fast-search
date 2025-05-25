@@ -16,10 +16,6 @@ func NewUsersUsecase(options dto.UsecaseOptions[inf.IUsersService]) inf.IUsersUs
 	return usersUsecase{service: options.SERVICE}
 }
 
-func (u usersUsecase) Ping(ctx context.Context) opt.Response {
-	return u.service.Ping(ctx)
-}
-
 func (u usersUsecase) CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) opt.Response {
 	return u.service.CreateUsers(ctx, req)
 }

@@ -22,24 +22,6 @@ func NewUsersController(options dto.ControllerOptions[inf.IUsersUsecase]) inf.IU
 	return usersController{usecase: options.USECASE}
 }
 
-func (c usersController) Ping(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	res := opt.Response{}
-
-	if res = c.usecase.Ping(ctx); res.StatCode >= http.StatusBadRequest {
-		if res.StatCode >= http.StatusInternalServerError {
-			pkg.Logrus(cons.ERROR, res.ErrMsg)
-			res.ErrMsg = cons.DEFAULT_ERR_MSG
-		}
-
-		helper.Api(rw, r, res)
-		return
-	}
-
-	helper.Api(rw, r, res)
-	return
-}
-
 func (c usersController) CreateUsers(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	parser := helper.NewParser()
