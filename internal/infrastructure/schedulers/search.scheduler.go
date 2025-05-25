@@ -49,7 +49,7 @@ func (s searchScheduler) searchHandler(rds inf.IRedis) {
 		}
 
 		start_at := string(result)
-		limit := 100
+		limit := 1000
 
 		usersRepositorie := repo.NewUsersRepositorie(s.ctx, s.db)
 		usersEntities := []entitie.UsersEntitie{}

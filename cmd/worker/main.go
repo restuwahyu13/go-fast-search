@@ -17,7 +17,6 @@ import (
 
 	config "github.com/restuwahyu13/go-fast-search/configs"
 	con "github.com/restuwahyu13/go-fast-search/internal/infrastructure/connections"
-	scheduler "github.com/restuwahyu13/go-fast-search/internal/infrastructure/schedulers"
 	worker "github.com/restuwahyu13/go-fast-search/internal/infrastructure/workers"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
 	"github.com/restuwahyu13/go-fast-search/shared/dto"
@@ -41,9 +40,8 @@ type (
 	}
 
 	syncOnce struct {
-		searchScheduler *sync.Once
-		searchWorker    *sync.Once
-		dlqWorker       *sync.Once
+		searchWorker *sync.Once
+		dlqWorker    *sync.Once
 	}
 )
 
@@ -130,17 +128,6 @@ func NewWorker(req dto.Request[Worker]) IWorker {
 func (w Worker) worker(wg *sync.WaitGroup, rso syncOnce) {
 	defer wg.Done()
 
-	rso.searchScheduler.Do(func() {
-		scheduler.NewSearchScheduler(dto.SchedulerOptions{
-			CTX:  w.CTX,
-			ENV:  w.ENV,
-			DB:   w.DB,
-			RDS:  w.RDS,
-			AMQP: w.AMQP,
-			MLS:  w.MLS,
-		}).SearchRun()
-	})
-
 	rso.searchWorker.Do(func() {
 		worker.NewSearchWorker(dto.WorkerOptions{
 			CTX:  w.CTX,
@@ -164,17 +151,15 @@ func (w Worker) worker(wg *sync.WaitGroup, rso syncOnce) {
 	})
 }
 
-func (w Worker) Register(wg *sync.WaitGroup) {
+func (w Worker) register(wg *sync.WaitGroup) {
 	worker := runtime.NumCPU()
 
-	searchSchedulerOnce := new(sync.Once)
 	searchWorkerOnce := new(sync.Once)
 	dlqWorkerOnce := new(sync.Once)
 
 	rso := syncOnce{
-		searchScheduler: searchSchedulerOnce,
-		searchWorker:    searchWorkerOnce,
-		dlqWorker:       dlqWorkerOnce,
+		searchWorker: searchWorkerOnce,
+		dlqWorker:    dlqWorkerOnce,
 	}
 
 	for i := 1; i <= worker; i++ {
@@ -185,7 +170,7 @@ func (w Worker) Register(wg *sync.WaitGroup) {
 
 func (w Worker) Listener() {
 	wg := sync.WaitGroup{}
-	w.Register(&wg)
+	w.register(&wg)
 
 	ctx, cancel := context.WithCancel(w.CTX)
 	defer cancel()

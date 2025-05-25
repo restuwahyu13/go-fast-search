@@ -35,6 +35,18 @@ wbuild:
 	${GO} vet --race -v ./cmd/api
 	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o worker ./cmd/worker
 
+.PHONY: sdev
+sdev:
+	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/scheduler --count=1 --race -V --signal SIGTERM
+
+.PHONY: sbuild
+sbuild:
+	${GO} mod tidy
+	${GO} mod verify
+	${GO} vet --race -v ./cmd/api
+	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o scheduler ./cmd/scheduler
+
+
 
 .PHONY: test
 test:

@@ -46,6 +46,29 @@ services:
     networks:
        - go-network
   ### ===================================
+  ### SCHEDULER SERVICE TERITORY
+  ### ===================================
+  scheduler:
+    container_name: go-scheduler
+    image: go-fast-search:latest
+    restart: always
+    command: ./scheduler
+    healthcheck:
+      interval: 120ms
+      start_period: 60ms
+      timeout: 30ms
+      retries: 3
+      test: env | grep $HOME
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - cache
+    expose:
+      - 3000
+    networks:
+       - go-network
+  ### ===================================
   ### DATABASE SERVICE TERITORY
   ### ===================================
   db:

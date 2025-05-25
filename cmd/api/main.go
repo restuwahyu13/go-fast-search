@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"runtime"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -52,6 +53,7 @@ var (
 )
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU() / 2)
 	transform := helper.NewTransform()
 
 	env_res, err = config.NewEnvirontment(".env", ".", "env")
