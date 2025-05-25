@@ -23,7 +23,7 @@ RUN go vet ./cmd/*; \
 FROM alpine:latest
 WORKDIR /usr/src/app
 
-COPY --from=builder /app/api /app/worker ./
+COPY --from=builder /app/api /app/worker /app/scheduler ./
 
 RUN apk update; \
     apk upgrade; \
