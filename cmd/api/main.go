@@ -131,18 +131,18 @@ func NewApi(req dto.Request[Api]) IApi {
 	}
 }
 
-func (i Api) Middleware() {
-	if i.ENV.Config.APP.ENV != cons.PROD {
-		i.ROUTER.Use(middleware.Logger)
+func (a Api) Middleware() {
+	if a.ENV.Config.APP.ENV != cons.PROD {
+		a.ROUTER.Use(middleware.Logger)
 	}
 
-	i.ROUTER.Use(middleware.Recoverer)
-	i.ROUTER.Use(middleware.RealIP)
-	i.ROUTER.Use(middleware.NoCache)
-	i.ROUTER.Use(middleware.GetHead)
-	i.ROUTER.Use(middleware.Compress(zlib.BestCompression))
-	i.ROUTER.Use(middleware.AllowContentType("application/json"))
-	i.ROUTER.Use(cors.Handler(cors.Options{
+	a.ROUTER.Use(middleware.Recoverer)
+	a.ROUTER.Use(middleware.RealIP)
+	a.ROUTER.Use(middleware.NoCache)
+	a.ROUTER.Use(middleware.GetHead)
+	a.ROUTER.Use(middleware.Compress(zlib.BestCompression))
+	a.ROUTER.Use(middleware.AllowContentType("application/json"))
+	a.ROUTER.Use(cors.Handler(cors.Options{
 		AllowedOrigins:     []string{"*"},
 		AllowedMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders:     []string{"Accept", "Content-Type", "Authorization"},
@@ -150,7 +150,7 @@ func (i Api) Middleware() {
 		OptionsPassthrough: true,
 		MaxAge:             900,
 	}))
-	i.ROUTER.Use(secure.New(secure.Options{
+	a.ROUTER.Use(secure.New(secure.Options{
 		FrameDeny:            true,
 		ContentTypeNosniff:   true,
 		BrowserXssFilter:     true,
@@ -160,20 +160,20 @@ func (i Api) Middleware() {
 	}).Handler)
 }
 
-func (i Api) Module() {
+func (a Api) Module() {
 	module.NewUsersModule[inf.IUsersService](dto.ModuleOptions{
-		ENV:    i.ENV,
-		DB:     i.DB,
-		RDS:    i.RDS,
-		AMQP:   i.AMQP,
-		MLS:    i.MLS,
-		ROUTER: i.ROUTER,
+		ENV:    a.ENV,
+		DB:     a.DB,
+		RDS:    a.RDS,
+		AMQP:   a.AMQP,
+		MLS:    a.MLS,
+		ROUTER: a.ROUTER,
 	})
 }
 
-func (i Api) Listener() {
+func (a Api) Listener() {
 	err := pkg.Graceful(env, func() opt.Graceful {
-		return opt.Graceful{HANDLER: i.ROUTER, ENV: i.ENV_RES}
+		return opt.Graceful{HANDLER: a.ROUTER, ENV: a.ENV_RES}
 	})
 
 	recover := grace.Recover(&err)
