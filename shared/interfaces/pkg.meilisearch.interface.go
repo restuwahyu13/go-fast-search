@@ -13,6 +13,8 @@ type IMeiliSearch interface {
 	BulkInsert(doc string, value any) (*meilisearch.TaskInfo, error)
 	BulkUpdate(doc string, value any) (*meilisearch.TaskInfo, error)
 	BulkDelete(doc string, ids ...string) (*meilisearch.TaskInfo, error)
+	GetStats(doc string) (*meilisearch.StatsIndex, error)
+	UpdateTypoTolerance(doc string, request *meilisearch.TypoTolerance) (*meilisearch.TaskInfo, error)
 	UpdateFilterableAttributes(doc string, request []string) ([]string, error)
 	UpdateSortableAttributes(doc string, request []string) ([]string, error)
 	UpdateSearchableAttributes(doc string, request []string) ([]string, error)

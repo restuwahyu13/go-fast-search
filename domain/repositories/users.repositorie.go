@@ -2,6 +2,9 @@ package repo
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/guregu/null/v6/zero"
@@ -10,6 +13,7 @@ import (
 
 	entitie "github.com/restuwahyu13/go-fast-search/domain/entities"
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
+	"github.com/restuwahyu13/go-fast-search/shared/dto"
 	helper "github.com/restuwahyu13/go-fast-search/shared/helpers"
 	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 	opt "github.com/restuwahyu13/go-fast-search/shared/output"
@@ -325,4 +329,115 @@ func (r usersMeilisearchRepositorie) UpdateDisplayedAttributes(attributes ...str
 	}
 
 	return nil
+}
+
+func (r usersMeilisearchRepositorie) ListUsersDocuments(req dto.Request[dto.MeiliSearchDocumentsQuery]) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
+	transform := helper.NewTransform()
+
+	deletedAtUnix, err := helper.TimeStampToUnix(time.Time{}.Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+
+	filter := fmt.Sprintf("deleted_at = %d", deletedAtUnix)
+	mlsReq := new(meilisearch.SearchRequest)
+
+	mlsReq.Limit = req.Query.Limit
+	mlsReq.Page = req.Query.Page
+	mlsReq.Sort = []string{req.Query.SortBy + ":" + req.Query.Sort}
+
+	if req.Query.MatchingStrategy != "" {
+		switch req.Query.MatchingStrategy {
+
+		case string(meilisearch.Last):
+			mlsReq.MatchingStrategy = meilisearch.Last
+			break
+
+		case string(meilisearch.All):
+			mlsReq.MatchingStrategy = meilisearch.All
+			break
+
+		case string(meilisearch.Frequency):
+			mlsReq.MatchingStrategy = meilisearch.Frequency
+			break
+		}
+	}
+
+	if req.Query.HighlightAttributes != "" {
+		mlsReq.AttributesToHighlight = strings.Split(req.Query.HighlightAttributes, ",")
+	}
+
+	if req.Query.Filter != nil && req.Query.FilterBy != "" {
+		filterBy := strings.Split(req.Query.FilterBy, ",")
+
+		if err := r.UpdateFilterableAttributes(filterBy...); err != nil {
+			return nil, err
+		}
+	}
+
+	if req.Query.Sort != "" && req.Query.SortBy != "" {
+		sortBy := strings.Split(req.Query.SortBy, ",")
+
+		if err := r.UpdateSortableAttributes(sortBy...); err != nil {
+			return nil, err
+		}
+
+		mlsReq.Sort = []string{req.Query.SortBy + ":" + req.Query.Sort}
+	}
+
+	usersFilterDoc := new(dto.ListUsersFilterDTO)
+	if err := transform.ReqToRes(&req.Query.Filter, usersFilterDoc); err != nil {
+		return nil, err
+	}
+
+	if usersFilterDoc.StartDate != "" && usersFilterDoc.EndDate != "" {
+		startDate, err := helper.TimeStampToUnix(usersFilterDoc.StartDate)
+		if err != nil {
+			return nil, err
+		}
+
+		endDate, err := helper.TimeStampToUnix(usersFilterDoc.EndDate)
+		if err != nil {
+			return nil, err
+		}
+
+		filter += fmt.Sprintf(" AND created_at > %d AND created_at < %d", startDate, endDate)
+	}
+
+	if usersFilterDoc.Age != "" {
+		filter += fmt.Sprintf(" AND age = %s", usersFilterDoc.Age)
+	}
+
+	if usersFilterDoc.City != "" {
+		filter += fmt.Sprintf(" AND age = %s", usersFilterDoc.City)
+	}
+
+	if usersFilterDoc.State != "" {
+		filter += fmt.Sprintf(" AND state = %s", usersFilterDoc.State)
+	}
+
+	if usersFilterDoc.Direction != "" {
+		filter += fmt.Sprintf(" AND direction = %s", usersFilterDoc.Direction)
+	}
+
+	if usersFilterDoc.Country != "" {
+		filter += fmt.Sprintf(" AND country = %s", usersFilterDoc.Country)
+	}
+
+	resultUsersStats, err := r.meilisearch.GetStats("users")
+	if err != nil {
+		return nil, err
+	}
+
+	mlsReq.Filter = filter
+	resultUsersDocuments, err := r.Search(req.Query.Search, mlsReq)
+	if err != nil {
+		return nil, err
+	}
+
+	resultUsersDocuments.Page = req.Query.Page + 1
+	resultUsersDocuments.TotalPages = int64(math.Ceil(float64(resultUsersStats.NumberOfDocuments) / float64(req.Query.Limit)))
+	resultUsersDocuments.Total = resultUsersStats.NumberOfDocuments
+
+	return resultUsersDocuments, nil
 }

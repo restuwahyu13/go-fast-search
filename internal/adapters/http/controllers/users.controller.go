@@ -164,8 +164,6 @@ func (c usersController) FindAllUsers(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.Data = req.Query
-
 	helper.Api(rw, r, res)
 	return
 }

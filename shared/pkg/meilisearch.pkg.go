@@ -252,6 +252,32 @@ func (p meilisearch) BulkDelete(doc string, ids ...string) (*search.TaskInfo, er
 	return task, nil
 }
 
+func (p meilisearch) GetStats(doc string) (*search.StatsIndex, error) {
+	getStats, err := p.meilisearch.Index(doc).GetStatsWithContext(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return getStats, nil
+}
+
+func (p meilisearch) UpdateTypoTolerance(doc string, request *search.TypoTolerance) (*search.TaskInfo, error) {
+	task, err := p.meilisearch.Index(doc).UpdateTypoToleranceWithContext(p.ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	if task.TaskUID < 1 {
+		return nil, cons.NO_ROWS_AFFECTED
+	}
+
+	if _, err := p.meilisearch.WaitForTaskWithContext(p.ctx, task.TaskUID, time.Duration(time.Second*3)); err != nil {
+		return nil, err
+	}
+
+	return task, nil
+}
+
 func (p meilisearch) UpdateFilterableAttributes(doc string, request []string) ([]string, error) {
 	filterAttributesPtr, err := p.meilisearch.Index(doc).GetFilterableAttributesWithContext(p.ctx)
 	if err != nil {

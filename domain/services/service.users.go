@@ -244,9 +244,30 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 }
 
 func (s usersService) FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) (res opt.Response) {
-	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
+	if req.Query.Limit < 1 {
+		req.Query.Limit = 10
+	}
 
-	usersDocResult, err := usersRepositorie.Search("", &meilisearch.SearchRequest{Filter: "deleted_at = -62135596800 AND id = 'a328a497-e7e4-460d-b55a-21f0dc66fb34' AND (updated_at = -62135596800 AND created_at > 1748159579) OR (updated_at > 1748159579)", Limit: 10, Offset: 0, Sort: []string{"created_at:desc"}})
+	if req.Query.Page < 1 {
+		req.Query.Page = 1
+	}
+
+	if req.Query.SearchBy == "" {
+		req.Query.SearchBy = "name,email,phone"
+	}
+
+	if req.Query.SortBy == "" {
+		req.Query.SortBy = "created_at"
+	}
+
+	if req.Query.Sort == "" {
+		req.Query.Sort = "desc"
+	}
+
+	req.Query.Page = (req.Query.Page - 1) * req.Query.Limit
+
+	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
+	resultUsersDocuments, err := usersRepositorie.ListUsersDocuments(req)
 	if err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()
@@ -256,7 +277,7 @@ func (s usersService) FindAllUsers(ctx context.Context, req dto.Request[dto.Meil
 
 	res.StatCode = http.StatusOK
 	res.Message = "Success"
-	res.Data = usersDocResult
+	res.Data = resultUsersDocuments
 
 	return
 }

@@ -3,7 +3,6 @@ package opt
 type (
 	MeiliSearchDocuments[T any] struct {
 		Results            T      `json:"results,omitempty"`
-		Total              int64  `json:"total,omitempty"`
 		Hits               T      `json:"hits,omitempty"`
 		EstimatedTotalHits int64  `json:"estimatedTotalHits,omitempty"`
 		Offset             int64  `json:"offset,omitempty"`
@@ -17,5 +16,6 @@ type (
 		TotalPages         int64  `json:"totalPages,omitempty"`
 		FacetStats         any    `json:"facetStats,omitempty"`
 		IndexUID           string `json:"indexUid,omitempty"`
+		Total              int64  `json:"total,omitempty"`
 	}
 )

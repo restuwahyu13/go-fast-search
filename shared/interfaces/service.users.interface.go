@@ -34,6 +34,7 @@ type (
 		UpdateSearchableAttributes(attributes ...string) error
 		UpdateSortableAttributes(attributes ...string) error
 		UpdateDisplayedAttributes(attributes ...string) error
+		ListUsersDocuments(req dto.Request[dto.MeiliSearchDocumentsQuery]) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
 	}
 
 	IUsersService interface {
