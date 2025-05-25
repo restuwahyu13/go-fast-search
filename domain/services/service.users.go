@@ -243,10 +243,10 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	return
 }
 
-func (s usersService) FindAllUsers(ctx context.Context) (res opt.Response) {
+func (s usersService) FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) (res opt.Response) {
 	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
 
-	usersDocResult, err := usersRepositorie.Search("", nil, &meilisearch.SearchRequest{Limit: 10, Offset: 0})
+	usersDocResult, err := usersRepositorie.Search("", &meilisearch.SearchRequest{Filter: "deleted_at = -62135596800 AND id = 'a328a497-e7e4-460d-b55a-21f0dc66fb34' AND (updated_at = -62135596800 AND created_at > 1748159579) OR (updated_at > 1748159579)", Limit: 10, Offset: 0, Sort: []string{"created_at:desc"}})
 	if err != nil {
 		res.StatCode = http.StatusInternalServerError
 		res.ErrMsg = err.Error()

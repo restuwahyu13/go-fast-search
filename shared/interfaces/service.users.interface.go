@@ -22,7 +22,7 @@ type (
 	}
 
 	IUsersMeiliSearchRepositorie interface {
-		Search(query string, attributes []string, filter *meilisearch.SearchRequest) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
+		Search(query string, filter *meilisearch.SearchRequest) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
 		Find(filter *meilisearch.DocumentsQuery) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error)
 		FindOne(id string, filter *meilisearch.DocumentQuery) (*entitie.UsersDocument, error)
 		Insert(value any) error
@@ -30,13 +30,17 @@ type (
 		Delete(id string) error
 		BulkInsert(value any) error
 		BulkUpdate(value any) error
+		UpdateFilterableAttributes(attributes ...string) error
+		UpdateSearchableAttributes(attributes ...string) error
+		UpdateSortableAttributes(attributes ...string) error
+		UpdateDisplayedAttributes(attributes ...string) error
 	}
 
 	IUsersService interface {
 		Ping(ctx context.Context) (res opt.Response)
 		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) (res opt.Response)
 		UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) (res opt.Response)
-		FindAllUsers(ctx context.Context) (res opt.Response)
+		FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) (res opt.Response)
 	}
 
 	IUsersException interface{}
@@ -45,7 +49,7 @@ type (
 		Ping(ctx context.Context) opt.Response
 		CreateUsers(ctx context.Context, req dto.Request[dto.CreateUsersDTO]) opt.Response
 		UpdateUsers(ctx context.Context, req dto.Request[dto.UpdateUsersDTO]) opt.Response
-		FindAllUsers(ctx context.Context) opt.Response
+		FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) opt.Response
 	}
 
 	IUsersController interface {

@@ -128,9 +128,33 @@ func (c usersController) UpdateUsers(rw http.ResponseWriter, r *http.Request) {
 
 func (c usersController) FindAllUsers(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	res := opt.Response{}
+	transform := helper.NewTransform()
 
-	if res = c.usecase.FindAllUsers(ctx); res.StatCode >= http.StatusBadRequest {
+	res := opt.Response{}
+	req := dto.Request[dto.MeiliSearchDocumentsQuery]{}
+
+	if err := transform.QueryToStruct(r.URL.Query().Encode(), &req.Query); err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		helper.Api(rw, r, res)
+		return
+	}
+
+	errors, err := gpc.Validator(req.Query)
+	if err != nil {
+		pkg.Logrus(cons.ERROR, err)
+		helper.Api(rw, r, res)
+		return
+	}
+
+	if errors != nil {
+		res.StatCode = http.StatusUnprocessableEntity
+		res.Errors = errors.Errors
+
+		helper.Api(rw, r, res)
+		return
+	}
+
+	if res = c.usecase.FindAllUsers(ctx, req); res.StatCode >= http.StatusBadRequest {
 		if res.StatCode >= http.StatusInternalServerError {
 			pkg.Logrus(cons.ERROR, res.ErrMsg)
 			res.ErrMsg = cons.DEFAULT_ERR_MSG
@@ -139,6 +163,8 @@ func (c usersController) FindAllUsers(rw http.ResponseWriter, r *http.Request) {
 		helper.Api(rw, r, res)
 		return
 	}
+
+	res.Data = req.Query
 
 	helper.Api(rw, r, res)
 	return

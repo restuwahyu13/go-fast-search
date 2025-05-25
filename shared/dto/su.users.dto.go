@@ -29,4 +29,14 @@ type (
 		Country     string `json:"country" validate:"omitempty"`
 		PostalCode  string `json:"postal_code" validate:"omitempty,len=5"`
 	}
+
+	ListUsersFilterDTO struct {
+		Age       string `query:"age" validate:"omitempty"`
+		StartDate string `query:"start_date" validate:"omitempty,datetime=2006-01-02"`
+		EndDate   string `query:"end_date" validate:"omitempty,datetime=2006-01-02"`
+		City      string `query:"city" validate:"omitempty"`
+		State     string `query:"state" validate:"omitempty"`
+		Direction string `query:"direction" validate:"omitempty"`
+		Country   string `query:"country" validate:"omitempty"`
+	}
 )

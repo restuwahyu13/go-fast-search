@@ -164,7 +164,7 @@ func NewUsersMeilisearchRepositorie(ctx context.Context, db meilisearch.ServiceM
 	return usersMeilisearchRepositorie{ctx: ctx, meilisearch: meilisearch, doc: new(entitie.UsersDocument)}
 }
 
-func (r usersMeilisearchRepositorie) Search(query string, attributes []string, filter *meilisearch.SearchRequest) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
+func (r usersMeilisearchRepositorie) Search(query string, filter *meilisearch.SearchRequest) (*opt.MeiliSearchDocuments[[]entitie.UsersDocument], error) {
 	transform := helper.NewTransform()
 
 	docResult := new(meilisearch.SearchResponse)
@@ -172,12 +172,6 @@ func (r usersMeilisearchRepositorie) Search(query string, attributes []string, f
 
 	if err := r.meilisearch.CreateCollection("users", "id", r.doc); err != nil {
 		return nil, err
-	}
-
-	if attributes != nil {
-		if _, err := r.meilisearch.CreateFilterableAttributes("users", attributes); err != nil {
-			return nil, err
-		}
 	}
 
 	err := r.meilisearch.Like("users", query, filter, docResult)
@@ -295,6 +289,38 @@ func (r usersMeilisearchRepositorie) BulkDelete(ids ...string) error {
 	}
 
 	if _, err := r.meilisearch.BulkDelete("users", ids...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) UpdateFilterableAttributes(attributes ...string) error {
+	if _, err := r.meilisearch.UpdateFilterableAttributes("users", attributes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) UpdateSearchableAttributes(attributes ...string) error {
+	if _, err := r.meilisearch.UpdateSearchableAttributes("users", attributes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) UpdateSortableAttributes(attributes ...string) error {
+	if _, err := r.meilisearch.UpdateSortableAttributes("users", attributes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r usersMeilisearchRepositorie) UpdateDisplayedAttributes(attributes ...string) error {
+	if _, err := r.meilisearch.UpdateDisplayedAttributes("users", attributes); err != nil {
 		return err
 	}
 

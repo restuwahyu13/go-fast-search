@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-
 	"strconv"
 	"strings"
 
 	"github.com/goccy/go-json"
-	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
-
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	inf "github.com/restuwahyu13/go-fast-search/shared/interfaces"
 )
 
 type parser struct{}

@@ -28,6 +28,6 @@ func (u usersUsecase) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	return u.service.UpdateUsers(ctx, req)
 }
 
-func (u usersUsecase) FindAllUsers(ctx context.Context) opt.Response {
-	return u.service.FindAllUsers(ctx)
+func (u usersUsecase) FindAllUsers(ctx context.Context, req dto.Request[dto.MeiliSearchDocumentsQuery]) opt.Response {
+	return u.service.FindAllUsers(ctx, req)
 }

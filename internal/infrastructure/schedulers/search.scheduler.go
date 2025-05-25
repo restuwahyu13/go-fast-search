@@ -66,14 +66,27 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 	defer wg.Done()
 
 	usersEntities := <-usersEntitiesChan
-	pkg.Logrus(cons.INFO, "Total data %d sync to meilisearch", len(usersEntities))
+	pkg.Logrus(cons.INFO, "Found total data %d in postgres", len(usersEntities))
 
 	if len(usersEntities) > 0 {
-		usersRepositorie := repo.NewUsersMeilisearchRepositorie(s.ctx, s.mls)
-
 		cdcTimeUnix, err := helper.TimeStampToUnix(start_at)
 		if err != nil {
-			pkg.Logrus(cons.ERROR, err)
+			errChan <- err
+			return
+		}
+
+		usersRepositorie := repo.NewUsersMeilisearchRepositorie(s.ctx, s.mls)
+
+		filterAttributes := []string{"id", "deleted_at", "created_at", "updated_at"}
+		sortAttributes := []string{"created_at"}
+
+		if err := usersRepositorie.UpdateFilterableAttributes(filterAttributes...); err != nil {
+			errChan <- err
+			return
+		}
+
+		if err := usersRepositorie.UpdateSortableAttributes(sortAttributes...); err != nil {
+			errChan <- err
 			return
 		}
 
@@ -127,10 +140,9 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 			updatedAtFilter := fmt.Sprintf("updated_at > %d", cdcTimeUnix)
 
 			filter := fmt.Sprintf("deleted_at = %d AND id = '%s' AND (%s) OR (%s)", defaultTimeUnix, usersDocEntitie.ID, createdAtFilter, updatedAtFilter)
-			attributes := []string{"id", "deleted_at", "created_at", "updated_at"}
 
 			filterSearch := meilisearch.SearchRequest{Query: "", Filter: filter, Sort: []string{"created_at:desc"}}
-			usersDoc, err := usersRepositorie.Search(userEntity.ID, attributes, &filterSearch)
+			usersDoc, err := usersRepositorie.Search(userEntity.ID, &filterSearch)
 
 			if err != nil {
 				errChan <- err
@@ -210,7 +222,7 @@ func (s searchScheduler) searchHandler(rds inf.IRedis) {
 func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) {
 	key := "SCHEDULER:SEARCH:BREAK"
 	value := 1
-	sync := 50
+	sync := 10
 
 	result, err := rds.IncrBy(key, value)
 	if err != nil {
@@ -240,6 +252,16 @@ func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) 
 				return
 			}
 
+		}
+
+		now := time.Now()
+
+		key := "WORKER:SEARCH:CDC"
+		value := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute()-10, now.Second(), now.Nanosecond(), now.Location()).Format(time.RFC3339)
+
+		if err := rds.Set(key, value); err != nil {
+			pkg.Logrus(cons.ERROR, err)
+			return
 		}
 	}
 

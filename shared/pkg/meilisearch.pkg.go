@@ -252,13 +252,8 @@ func (p meilisearch) BulkDelete(doc string, ids ...string) (*search.TaskInfo, er
 	return task, nil
 }
 
-func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([]string, error) {
-	filterAttributesPtr, err := p.meilisearch.Index(doc).GetFilterableAttributes()
-	if err != nil {
-		return nil, err
-	}
-
-	sortAttributesPtr, err := p.meilisearch.Index(doc).GetSortableAttributes()
+func (p meilisearch) UpdateFilterableAttributes(doc string, request []string) ([]string, error) {
+	filterAttributesPtr, err := p.meilisearch.Index(doc).GetFilterableAttributesWithContext(p.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -267,13 +262,6 @@ func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([
 	for _, attribute := range request {
 		if slices.Index(*filterAttributesPtr, attribute) == -1 {
 			filterAbleIdx = -1
-		}
-	}
-
-	sortAbleIdx := 0
-	for _, attribute := range request {
-		if slices.Index(*sortAttributesPtr, attribute) == -1 {
-			sortAbleIdx = -1
 		}
 	}
 
@@ -293,6 +281,22 @@ func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([
 
 	}
 
+	return *filterAttributesPtr, nil
+}
+
+func (p meilisearch) UpdateSortableAttributes(doc string, request []string) ([]string, error) {
+	sortAttributesPtr, err := p.meilisearch.Index(doc).GetSortableAttributesWithContext(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortAbleIdx := 0
+	for _, attribute := range request {
+		if slices.Index(*sortAttributesPtr, attribute) == -1 {
+			sortAbleIdx = -1
+		}
+	}
+
 	if sortAbleIdx == -1 {
 		task, err := p.meilisearch.Index(doc).UpdateSortableAttributesWithContext(p.ctx, &request)
 		if err != nil {
@@ -310,5 +314,71 @@ func (p meilisearch) CreateFilterableAttributes(doc string, request []string) ([
 		return request, nil
 	}
 
-	return *filterAttributesPtr, nil
+	return *sortAttributesPtr, nil
+}
+
+func (p meilisearch) UpdateSearchableAttributes(doc string, request []string) ([]string, error) {
+	searchAttributesPtr, err := p.meilisearch.Index(doc).GetSearchableAttributesWithContext(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortAbleIdx := 0
+	for _, attribute := range request {
+		if slices.Index(*searchAttributesPtr, attribute) == -1 {
+			sortAbleIdx = -1
+		}
+	}
+
+	if sortAbleIdx == -1 {
+		task, err := p.meilisearch.Index(doc).UpdateSearchableAttributesWithContext(p.ctx, &request)
+		if err != nil {
+			return nil, err
+		}
+
+		if task.TaskUID < 1 {
+			return nil, cons.NO_ROWS_AFFECTED
+		}
+
+		if _, err := p.meilisearch.WaitForTaskWithContext(p.ctx, task.TaskUID, time.Duration(time.Second*3)); err != nil {
+			return nil, err
+		}
+
+		return request, nil
+	}
+
+	return *searchAttributesPtr, nil
+}
+
+func (p meilisearch) UpdateDisplayedAttributes(doc string, request []string) ([]string, error) {
+	searchAttributesPtr, err := p.meilisearch.Index(doc).GetDisplayedAttributesWithContext(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sortAbleIdx := 0
+	for _, attribute := range request {
+		if slices.Index(*searchAttributesPtr, attribute) == -1 {
+			sortAbleIdx = -1
+		}
+	}
+
+	if sortAbleIdx == -1 {
+		task, err := p.meilisearch.Index(doc).UpdateDisplayedAttributesWithContext(p.ctx, &request)
+		if err != nil {
+			return nil, err
+		}
+
+		if task.TaskUID < 1 {
+			return nil, cons.NO_ROWS_AFFECTED
+		}
+
+		if _, err := p.meilisearch.WaitForTaskWithContext(p.ctx, task.TaskUID, time.Duration(time.Second*3)); err != nil {
+			return nil, err
+		}
+
+		return request, nil
+	}
+
+	return *searchAttributesPtr, nil
 }
