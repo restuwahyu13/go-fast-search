@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/guregu/null/v6/zero"
@@ -267,8 +268,16 @@ func (s usersService) FindAllUsers(ctx context.Context, req dto.Request[dto.Meil
 	usersRepositorie := repo.NewUsersMeilisearchRepositorie(ctx, s.mls)
 	resultUsersDocuments, err := usersRepositorie.ListUsersDocuments(req)
 	if err != nil {
-		res.StatCode = http.StatusInternalServerError
-		res.ErrMsg = err.Error()
+		if !strings.Contains(err.Error(), "not found") {
+			res.StatCode = http.StatusInternalServerError
+			res.ErrMsg = err.Error()
+
+			return
+		}
+
+		res.StatCode = http.StatusOK
+		res.Message = "Success"
+		res.Data = []entitie.UsersDocument{}
 
 		return
 	}
