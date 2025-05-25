@@ -4,6 +4,7 @@ import (
 	"compress/zlib"
 	"context"
 	"errors"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -158,6 +159,13 @@ func (a Api) Middleware() {
 		STSPreload:           true,
 		STSSeconds:           900,
 	}).Handler)
+
+	a.ROUTER.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		helper.Api(w, r, opt.Response{
+			StatCode: http.StatusNotFound,
+			ErrMsg:   "Route not found",
+		})
+	}))
 }
 
 func (a Api) Module() {

@@ -30,12 +30,14 @@ var errorCodeMapping = map[int]string{
 	http.StatusInternalServerError: "GENERAL_ERROR",
 }
 
+var startTime time.Time = time.Now()
+
 func Version(path string) string {
 	return fmt.Sprintf("%s/%s", cons.API, path)
 }
 
 func Api(rw http.ResponseWriter, r *http.Request, options opt.Response) {
-	rt := &responseTimer{startTime: time.Now(), ResponseWriter: rw}
+	rt := &responseTimer{startTime: startTime, ResponseWriter: rw}
 
 	response := buildResponse(options, r, rt)
 	writeResponse(rt, NewParser(), response)
@@ -89,21 +91,17 @@ func buildResponse(options opt.Response, r *http.Request, rt *responseTimer) opt
 		ErrMsg:   cons.DEFAULT_ERR_MSG,
 	}
 
-	elapsedNano := time.Since(rt.startTime).Nanoseconds()
-	elapsedMs := float64(elapsedNano) / 1e6
-
 	if isEmptyResponse(options) {
 		defaultErrCode := getErrorCode(http.StatusInternalServerError)
 		response.ErrCode = &defaultErrCode
 		response.Info = opt.Info{
-			Host:         r.Host,
-			Protocol:     getProtocol(r),
-			Path:         r.URL.Path,
-			Method:       r.Method,
-			Timestamp:    time.Now().Format(time.RFC3339),
-			ResponseTime: fmt.Sprintf("%.3f ms", elapsedMs),
-			UserAgent:    r.UserAgent(),
-			IPAddress:    getIPAddress(r),
+			Host:      r.Host,
+			Protocol:  getProtocol(r),
+			Path:      r.URL.Path,
+			Method:    r.Method,
+			Timestamp: time.Now().Format(time.RFC3339),
+			UserAgent: r.UserAgent(),
+			IPAddress: getIPAddress(r),
 		}
 
 		return response
@@ -113,14 +111,13 @@ func buildResponse(options opt.Response, r *http.Request, rt *responseTimer) opt
 	setResponseDefaults(&response)
 
 	response.Info = opt.Info{
-		Host:         r.Host,
-		Protocol:     getProtocol(r),
-		Path:         r.URL.Path,
-		Method:       r.Method,
-		Timestamp:    time.Now().Format(time.RFC3339),
-		ResponseTime: fmt.Sprintf("%.3f ms", elapsedMs),
-		UserAgent:    r.UserAgent(),
-		IPAddress:    getIPAddress(r),
+		Host:      r.Host,
+		Protocol:  getProtocol(r),
+		Path:      r.URL.Path,
+		Method:    r.Method,
+		Timestamp: time.Now().Format(time.RFC3339),
+		UserAgent: r.UserAgent(),
+		IPAddress: getIPAddress(r),
 	}
 
 	return response

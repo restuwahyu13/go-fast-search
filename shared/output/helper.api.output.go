@@ -27,6 +27,6 @@ type (
 		IPAddress    any `json:"ip_address"`
 		UserAgent    any `json:"user_agent"`
 		Timestamp    any `json:"timestamp"`
-		ResponseTime any `json:"response_time"`
+		ResponseTime any `json:"response_time,omitempty"`
 	}
 )
