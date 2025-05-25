@@ -3,11 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
-	"time"
 
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/redis/go-redis/v9"
@@ -86,33 +82,6 @@ func (w deadLetterQueueWorker) deadLetterQueueConsumer() {
 	})
 }
 
-func (w deadLetterQueueWorker) signalDeadLetterQueue() inf.IRedis {
-	now := time.Now().Format(cons.DATE_TIME_FORMAT)
-
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGALRM, syscall.SIGABRT, syscall.SIGUSR1)
-
-	for {
-		select {
-		case sig := <-ch:
-			pkg.Logrus(cons.INFO, "%s - Worker dlq is received signal: %s", now, sig.String())
-
-			if w.env.Config.APP.ENV != cons.DEV {
-				time.Sleep(time.Second * 10)
-			} else {
-				time.Sleep(time.Second * 15)
-			}
-
-			os.Exit(0)
-
-		default:
-			time.Sleep(time.Second * 5)
-			pkg.Logrus(cons.INFO, "%s - Worker dlq is running...", now)
-		}
-	}
-}
-
 func (w deadLetterQueueWorker) DeadLetterQueueRun() {
 	w.deadLetterQueueConsumer()
-	w.signalDeadLetterQueue()
 }

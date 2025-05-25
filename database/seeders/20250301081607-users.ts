@@ -47,7 +47,7 @@ module.exports = {
 				email: user.email,
 				phone: user.phone,
 				date_of_birth: user.date_of_birth,
-				age: user.age,
+				age: user.age.toString(),
 				address: user.address,
 				city: user.city,
 				state: user.state,
@@ -66,7 +66,7 @@ module.exports = {
 			})
 
 			return await index
-				.addDocuments(newUsers)
+				.addDocuments(newUsers, { primaryKey: 'id' })
 				.then(() => {
 					console.log('MeiliSearch inserted successfully')
 					return queryInterface

@@ -2,6 +2,6 @@ package inf
 
 type (
 	ISearchScheduler interface {
-		Run()
+		SearchRun()
 	}
 )

@@ -45,11 +45,11 @@ test:
 #################################
 .PHONY: upb
 upb:
-	${DOCKER} build -t go-api:latest --compress .
+	${DOCKER} build -t go-fast-search:latest --compress .
 
 .PHONY: up
 up:
-	${COMPOSE} up -d --remove-orphans --no-deps --build
+	${COMPOSE} up -d --remove-orphans --no-deps
 
 .PHONY: down
 down:

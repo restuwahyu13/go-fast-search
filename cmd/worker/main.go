@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -38,6 +39,12 @@ type (
 		AMQP *rabbitmq.Conn
 		MLS  meilisearch.ServiceManager
 	}
+
+	syncOnce struct {
+		searchScheduler *sync.Once
+		searchWorker    *sync.Once
+		dlqWorker       *sync.Once
+	}
 )
 
 var (
@@ -47,6 +54,7 @@ var (
 )
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU() / 2)
 	transform := helper.NewTransform()
 
 	env_res, err = config.NewEnvirontment(".env", ".", "env")
@@ -119,49 +127,68 @@ func NewWorker(req dto.Request[Worker]) IWorker {
 	}
 }
 
-func (i Worker) Register(wg *sync.WaitGroup) {
-	wg.Add(3)
+func (w Worker) worker(wg *sync.WaitGroup, rso syncOnce) {
+	defer wg.Done()
 
-	go func() {
-		defer wg.Done()
+	rso.searchScheduler.Do(func() {
 		scheduler.NewSearchScheduler(dto.SchedulerOptions{
-			CTX:  i.CTX,
-			ENV:  i.ENV,
-			DB:   i.DB,
-			RDS:  i.RDS,
-			AMQP: i.AMQP,
-			MLS:  i.MLS,
-		}).Run()
-	}()
-
-	go func() {
-		defer wg.Done()
-		worker.NewSearchWorker(dto.WorkerOptions{
-			CTX:  i.CTX,
-			ENV:  i.ENV,
-			DB:   i.DB,
-			RDS:  i.RDS,
-			AMQP: i.AMQP,
-			MLS:  i.MLS,
+			CTX:  w.CTX,
+			ENV:  w.ENV,
+			DB:   w.DB,
+			RDS:  w.RDS,
+			AMQP: w.AMQP,
+			MLS:  w.MLS,
 		}).SearchRun()
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	rso.searchWorker.Do(func() {
+		worker.NewSearchWorker(dto.WorkerOptions{
+			CTX:  w.CTX,
+			ENV:  w.ENV,
+			DB:   w.DB,
+			RDS:  w.RDS,
+			AMQP: w.AMQP,
+			MLS:  w.MLS,
+		}).SearchRun()
+	})
+
+	rso.dlqWorker.Do(func() {
 		worker.NewDeadLetterQueueWorker(dto.WorkerOptions{
-			CTX:  i.CTX,
-			ENV:  i.ENV,
-			DB:   i.DB,
-			RDS:  i.RDS,
-			AMQP: i.AMQP,
-			MLS:  i.MLS,
+			CTX:  w.CTX,
+			ENV:  w.ENV,
+			DB:   w.DB,
+			RDS:  w.RDS,
+			AMQP: w.AMQP,
+			MLS:  w.MLS,
 		}).DeadLetterQueueRun()
-	}()
+	})
 }
 
-func (i Worker) Listener() {
+func (w Worker) Register(wg *sync.WaitGroup) {
+	worker := runtime.NumCPU()
+
+	searchSchedulerOnce := new(sync.Once)
+	searchWorkerOnce := new(sync.Once)
+	dlqWorkerOnce := new(sync.Once)
+
+	rso := syncOnce{
+		searchScheduler: searchSchedulerOnce,
+		searchWorker:    searchWorkerOnce,
+		dlqWorker:       dlqWorkerOnce,
+	}
+
+	for i := 1; i <= worker; i++ {
+		wg.Add(1)
+		go w.worker(wg, rso)
+	}
+}
+
+func (w Worker) Listener() {
 	wg := sync.WaitGroup{}
-	i.Register(&wg)
+	w.Register(&wg)
+
+	ctx, cancel := context.WithCancel(w.CTX)
+	defer cancel()
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGALRM, syscall.SIGABRT, syscall.SIGUSR1)
@@ -169,17 +196,22 @@ func (i Worker) Listener() {
 	for {
 		select {
 		case <-ch:
-			if i.ENV.Config.APP.ENV != cons.DEV {
-				time.Sleep(time.Second * 3)
-			} else {
+			if w.ENV.Config.APP.ENV != cons.DEV {
 				time.Sleep(time.Second * 10)
+			} else {
+				time.Sleep(time.Second * 15)
 			}
 
 			wg.Wait()
 			os.Exit(0)
+			return
+
+		case <-ctx.Done():
+			wg.Wait()
+			return
 
 		default:
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 5)
 			wg.Wait()
 		}
 	}

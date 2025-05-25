@@ -4,11 +4,9 @@ services:
   ### ===================================
   api:
     container_name: go-api
-    command: ./api
+    image: go-fast-search:latest
     restart: always
-    build:
-      context: .
-      dockerfile: external/deployments/Dockerfile
+    command: ./api
     healthcheck:
       interval: 120ms
       start_period: 60ms
@@ -29,11 +27,9 @@ services:
   ### ===================================
   worker:
     container_name: go-worker
-    command: ./worker
+    image: go-fast-search:latest
     restart: always
-    build:
-      context: .
-      dockerfile: external/deployments/Dockerfile
+    command: ./worker
     healthcheck:
       interval: 120ms
       start_period: 60ms
@@ -46,7 +42,7 @@ services:
       - db
       - cache
     expose:
-      - 3000:3000
+      - 3000
     networks:
        - go-network
   ### ===================================
@@ -89,9 +85,6 @@ services:
   search:
     image: getmeili/meilisearch:latest
     restart: always
-    command:
-     - "--http-payload-size-limit"
-     - "200MB"
     healthcheck:
       interval: 120ms
       start_period: 60ms

@@ -196,7 +196,7 @@ func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) 
 	}
 }
 
-func (s searchScheduler) Run() {
+func (s searchScheduler) SearchRun() {
 	cron := pkg.NewCron()
 
 	crontime := cons.Every1Minute

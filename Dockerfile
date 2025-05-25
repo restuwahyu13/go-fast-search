@@ -8,12 +8,10 @@ ENV GO111MODULE=on \
 
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod verify \
-    && go mod download
+RUN go mod download; go mod verify
 
 COPY . .
-RUN go vet --race -v ./cmd/api \
-    && go build --race -v -ldflags="-s -w" -o main ./cmd/api
+RUN go vet ./cmd/*; go build -v -ldflags="-s -w" -o api ./cmd/api; go build -v -ldflags="-s -w" -o worker ./cmd/worker
 
 # ======================
 #  ALPINE STAGE
@@ -21,8 +19,8 @@ RUN go vet --race -v ./cmd/api \
 FROM alpine:latest
 WORKDIR /usr/src/app
 
-COPY --from=builder /app/main .
+COPY --from=builder /app/api /app/worker ./
 
 RUN apk update \
-    && apk upgrade -y \
+    && apk upgrade \
     && apk add --no-cache tzdata ca-certificates
