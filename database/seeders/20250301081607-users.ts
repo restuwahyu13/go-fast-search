@@ -55,14 +55,16 @@ module.exports = {
 				country: user.country,
 				postal_code: user.postal_code,
 				created_at: Math.floor(Date.now() / 1000),
-				updated_at: -62135596800,
-				deleted_at: -62135596800
+				updated_at: null,
+				deleted_at: null
 			}))
 
 			const index: Index<RecordAny> = client.index('users')
 			index.updateSettings({
 				pagination: { maxTotalHits: 1000 },
-				searchableAttributes: ['id', 'name', 'email', 'phone', 'date_of_birth', 'age', 'city', 'state', 'direction', 'country', 'postal_code', 'created_at', 'updated_at', 'deleted_at']
+				searchableAttributes: ['name', 'email', 'phone'],
+				sortableAttributes: ['created_at'],
+				filterableAttributes: ['age', 'state', 'direction', 'country', 'created_at', 'deleted_at']
 			})
 
 			return await index

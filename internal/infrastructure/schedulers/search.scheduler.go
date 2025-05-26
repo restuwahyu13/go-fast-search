@@ -108,12 +108,6 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 				return
 			}
 
-			deletedAtUnix, err := helper.TimeStampToUnix(userEntity.DeletedAt.Time.Format(time.RFC3339))
-			if err != nil {
-				errChan <- err
-				return
-			}
-
 			usersDocEntitie.ID = userEntity.ID
 			usersDocEntitie.Name = userEntity.Name
 			usersDocEntitie.Email = userEntity.Email
@@ -128,18 +122,11 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 			usersDocEntitie.PostalCode = userEntity.PostalCode
 			usersDocEntitie.CreatedAt = createdAtUnix
 			usersDocEntitie.UpdatedAt = updatedAtUnix
-			usersDocEntitie.DeletedAt = deletedAtUnix
 
-			defaultTimeUnix, err := helper.TimeStampToUnix(time.Time{}.Format(time.RFC3339))
-			if err != nil {
-				errChan <- err
-				return
-			}
+			createdAtFilter := fmt.Sprintf("updated_at IS NULL AND created_at > %d", cdcTimeUnix)
+			updatedAtFilter := fmt.Sprintf("updated_at IS NOT NULL AND updated_at > %d", cdcTimeUnix)
 
-			createdAtFilter := fmt.Sprintf("updated_at = %d AND created_at > %d", defaultTimeUnix, cdcTimeUnix)
-			updatedAtFilter := fmt.Sprintf("updated_at > %d", cdcTimeUnix)
-
-			filter := fmt.Sprintf("deleted_at = %d AND id = '%s' AND (%s) OR (%s)", defaultTimeUnix, usersDocEntitie.ID, createdAtFilter, updatedAtFilter)
+			filter := fmt.Sprintf("deleted_at IS NULL AND id = '%s' AND (%s) OR (%s)", usersDocEntitie.ID, createdAtFilter, updatedAtFilter)
 			fields := []string{
 				"id",
 				"name",
@@ -158,7 +145,7 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 				"deleted_at",
 			}
 
-			fetchSearch := meilisearch.DocumentsQuery{Filter: filter, Fields: fields}
+			fetchSearch := meilisearch.DocumentsQuery{Filter: filter, Fields: fields, Offset: 0, Limit: 1000}
 			usersFetchDocuments, err := usersRepositorie.Find(&fetchSearch)
 
 			if err != nil {
@@ -251,7 +238,7 @@ func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) 
 		breakTime := time.Duration(time.Second * 60)
 		pkg.Logrus(cons.INFO, fmt.Sprintf("Search scheduler break when equal max %d, running again after %d minute is over", sync, int64(breakTime.Minutes())))
 
-		ttl, err := rds.TTL(key, int(breakTime.Seconds()))
+		ttl, err := rds.TTL(key)
 		if err != nil {
 			pkg.Logrus(cons.ERROR, err)
 			return

@@ -102,7 +102,7 @@ func (p redis) IncrBy(key string, value int) (int, error) {
 	return int(res), nil
 }
 
-func (p redis) TTL(key string, value int) (int, error) {
+func (p redis) TTL(key string) (int, error) {
 	cmd := p.redis.TTL(p.ctx, key)
 
 	if err := cmd.Err(); err != nil {

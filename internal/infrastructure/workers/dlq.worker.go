@@ -65,16 +65,21 @@ func (w deadLetterQueueWorker) deadLetterQueueConsumer() {
 			req.Body.Key = key
 			req.Body.Count = 1
 			req.Body.Retry = 5
-			req.Body.Backoff = 5
+			req.Body.BackOffTime = 300
 
-			helper.SleepBackoff(req)
+			_, err := helper.SleepBackoff[int](req, func() (int, error) {
+				if err := amqp.Publisher(amqp_req); err != nil {
+					return -1, err
+				}
 
-			if err := amqp.Publisher(amqp_req); err != nil {
-				pkg.Logrus(cons.ERROR, err)
+				pkg.Logrus(cons.INFO, "Queue is allowed to be consumed: %s", string(d.Body))
+				return 1, nil
+			})
+
+			if err != nil {
 				return rabbitmq.NackDiscard
 			}
 
-			pkg.Logrus(cons.INFO, "Queue is allowed to be consumed: %s", string(d.Body))
 			return rabbitmq.Ack
 		}
 

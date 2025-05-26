@@ -355,12 +355,7 @@ func (r usersMeilisearchRepositorie) ListUsersDocuments(req dto.Request[dto.Meil
 		return nil, err
 	}
 
-	deletedAtUnix, err := helper.TimeStampToUnix(time.Time{}.Format(time.RFC3339))
-	if err != nil {
-		return nil, err
-	}
-
-	filter := fmt.Sprintf("deleted_at = %d", deletedAtUnix)
+	filter := "deleted_at IS NULL"
 
 	if usersFilterDoc.StartDate != "" && usersFilterDoc.EndDate != "" {
 		startDate, err := helper.TimeStampToUnix(usersFilterDoc.StartDate)
@@ -433,11 +428,6 @@ func (r usersMeilisearchRepositorie) ListUsersDocuments(req dto.Request[dto.Meil
 		mlsSearchReq.AttributesToRetrieve = fields
 		mlsSearchReq.Filter = filter
 
-		mlsSearchReq.AttributesToHighlight, err = r.meilisearch.GetSearchableAttributes("users")
-		if err != nil {
-			return nil, err
-		}
-
 		if req.Query.MatchingStrategy != "" {
 			switch req.Query.MatchingStrategy {
 
@@ -456,6 +446,11 @@ func (r usersMeilisearchRepositorie) ListUsersDocuments(req dto.Request[dto.Meil
 		}
 
 		usersStatDocuments, err := r.meilisearch.GetStats("users")
+		if err != nil {
+			return nil, err
+		}
+
+		mlsSearchReq.AttributesToHighlight, err = r.meilisearch.GetSearchableAttributes("users")
 		if err != nil {
 			return nil, err
 		}

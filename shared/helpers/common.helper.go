@@ -1,11 +1,9 @@
 package helper
 
 import (
-	"math"
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/wagslane/go-rabbitmq"
 
 	cons "github.com/restuwahyu13/go-fast-search/shared/constants"
@@ -37,30 +35,39 @@ func MeiliSearchPublisher[T any](amqp inf.IRabbitMQ, secret string, id any, data
 	return nil
 }
 
-func SleepBackoff(req dto.Request[dto.SleepBackoff]) {
-	cmd := req.Config.Redis.IncrBy(req.Body.Ctx, req.Body.Key, int64(req.Body.Count))
-	if cmd.Err() != nil {
-		logrus.Error(cmd.Err())
-		return
+func SleepBackoff[T any](req dto.Request[dto.SleepBackoff], handler func() (T, error)) (T, error) {
+	cmdIncrBy := req.Config.Redis.IncrBy(req.Body.Ctx, req.Body.Key, req.Body.Count)
+	if err := cmdIncrBy.Err(); err != nil {
+		return any(nil).(T), err
 	}
 
-	count := int(cmd.Val())
+	if cmdIncrBy.Val() >= req.Body.Retry {
+		breakTime := time.Duration(time.Second * time.Duration(req.Body.BackOffTime))
 
-	if count >= req.Body.Retry {
-		waitoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
-		time.Sleep(waitoff)
+		cmdTTL := req.Config.Redis.TTL(req.Body.Ctx, req.Body.Key)
+		if err := cmdTTL.Err(); err != nil {
+			return any(nil).(T), err
+		}
 
-		cmd := req.Config.Redis.Set(req.Body.Ctx, req.Body.Key, req.Body.Count, 0)
-		if cmd.Err() != nil {
-			logrus.Error(cmd.Err())
-			return
+		if cmdTTL.Val() < 1 {
+			cmdSet := req.Config.Redis.SetEx(req.Body.Ctx, req.Body.Key, cmdIncrBy.Val(), breakTime)
+			if err := cmdSet.Err(); err != nil {
+				return any(nil).(T), err
+			}
+
+		} else if cmdTTL.Val() > 1 && cmdTTL.Val() < 3 {
+			cmdSet := req.Config.Redis.Set(req.Body.Ctx, req.Body.Key, req.Body.Count, 0)
+			if err := cmdSet.Err(); err != nil {
+				return any(nil).(T), err
+			}
 		}
 	}
 
-	if count <= req.Body.Retry {
-		backoff := time.Duration(math.Pow(float64(req.Body.Backoff), float64(count))) * time.Second
-		time.Sleep(backoff)
+	if cmdIncrBy.Val() <= req.Body.Retry {
+		return handler()
 	}
+
+	return any(nil).(T), nil
 }
 
 func TimeStampToUnix(timestamp any) (int64, error) {

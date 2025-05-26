@@ -64,11 +64,11 @@ type (
 
 type (
 	SleepBackoff struct {
-		Ctx     context.Context
-		Redis   *redis.Client
-		Key     string
-		Count   int
-		Retry   int
-		Backoff int
+		Ctx         context.Context
+		Redis       *redis.Client
+		Key         string
+		Count       int64
+		Retry       int64
+		BackOffTime int64
 	}
 )

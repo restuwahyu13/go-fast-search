@@ -13,5 +13,5 @@ type IRedis interface {
 	HSetEx(key string, expiration time.Duration, values ...any) error
 	HGet(key string, field string) ([]byte, error)
 	IncrBy(key string, value int) (int, error)
-	TTL(key string, value int) (int, error)
+	TTL(key string) (int, error)
 }
