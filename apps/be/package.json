@@ -1,0 +1,26 @@
+{
+	"name": "be-monorepo",
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "nodemon -V -e .go,.env -w . -x go run ./cmd/api --count=1 --race -V --signal SIGTERM"
+	},
+	"repository": {
+		"type": "git",
+		"url": "restuwahyu13:restuwahyu13/go-fast-search.git"
+	},
+	"author": {
+		"name": "Restu Wahyu Saputra",
+		"url": "https://github.com/restuwahyu13"
+	},
+	"maintainers": [
+		"Restu Wahyu Saputra"
+	],
+	"license": "MIT",
+	"engines": {
+		"node": ">= 20.x.x",
+		"npm": ">= 10.x.x"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.10"
+	}
+}

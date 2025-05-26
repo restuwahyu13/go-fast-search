@@ -1,0 +1,9 @@
+databases
+/.env
+/.env.*
+worker
+api
+scheduler
+node_modules
+package*.json
+.gitignore

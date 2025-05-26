@@ -1,0 +1,37 @@
+{
+	"name": "root-monorepo",
+	"private": true,
+	"version": "0.0.1",
+	"scripts": {
+		"build": "turbo run build",
+		"start": "turbo run start",
+		"runtime": "turbo run runtime",
+		"dev": "turbo run dev --parallel",
+		"lint": "turbo run lint",
+		"check": "turbo run check-types",
+		"install": "cd ./apps/be; go mod download; go mod verify; cd ..",
+		"worker": "cd ./apps/be; nodemon -V -e .go,.env -w . -x go run ./cmd/worker --count=1 --race -V --signal SIGTERM; cd ..",
+		"scheduler": "cd ./apps/be; nodemon -V -e .go,.env -w . -x go run ./cmd/scheduler --count=1 --race -V --signal SIGTERM; cd .."
+	},
+	"author": {
+		"name": "Restu Wahyu Saputra",
+		"email": "restuwahyu13@gmail.com",
+		"url": "https://github.com/restuwahyu13"
+	},
+	"maintainers": [
+		"Restu Wahyu Saputra"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/restuwahyu13/go-fast-search"
+	},
+	"license": "MIT",
+	"engines": {
+		"node": ">= 20.x.x",
+		"npm": ">= 10.x.x"
+	},
+	"packageManager": "pnpm@8.15.5",
+	"devDependencies": {
+		"turbo": "^2.5.3"
+	}
+}

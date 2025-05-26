@@ -2,9 +2,30 @@ services:
   ### ===================================
   ### API SERVICE TERITORY
   ### ===================================
+  web:
+    container_name: web
+    image: web:latest
+    restart: always
+    mem_limit: 512m
+    mem_swappiness: 70
+    healthcheck:
+      interval: 120ms
+      start_period: 60ms
+      timeout: 30ms
+      retries: 3
+      test: env | grep $HOME
+    depends_on:
+      - api
+    ports:
+      - 3000:3000
+    networks:
+       - app-network
+  ### ===================================
+  ### API SERVICE TERITORY
+  ### ===================================
   api:
-    container_name: go-api
-    image: go-fast-search:latest
+    container_name: api
+    image: api:latest
     restart: always
     mem_limit: 512m
     mem_swappiness: 70
@@ -16,20 +37,20 @@ services:
       retries: 3
       test: env | grep $HOME
     env_file:
-      - .env
+      - apps/be/.env
     depends_on:
       - db
       - cache
     ports:
-      - 3000:3000
+      - 4000:4000
     networks:
-       - go-network
-  ### ===================================
-  ### WORKER SERVICE TERITORY
-  ### ===================================
+       - app-network
+  # ### ===================================
+  # ### WORKER SERVICE TERITORY
+  # ### ===================================
   worker:
-    container_name: go-worker
-    image: go-fast-search:latest
+    container_name: worker
+    image: api:latest
     restart: always
     mem_limit: 1gb
     mem_swappiness: 70
@@ -41,20 +62,20 @@ services:
       retries: 3
       test: env | grep $HOME
     env_file:
-      - .env
+      - apps/be/.env
     depends_on:
       - db
       - cache
     expose:
-      - 3000
+      - 4000
     networks:
-       - go-network
-  ### ===================================
-  ### SCHEDULER SERVICE TERITORY
-  ### ===================================
+       - app-network
+  # ### ===================================
+  # ### SCHEDULER SERVICE TERITORY
+  # ### ===================================
   scheduler:
-    container_name: go-scheduler
-    image: go-fast-search:latest
+    container_name: scheduler
+    image: api:latest
     restart: always
     mem_limit: 1gb
     mem_swappiness: 70
@@ -66,17 +87,17 @@ services:
       retries: 3
       test: env | grep $HOME
     env_file:
-      - .env
+      - apps/be/.env
     depends_on:
       - db
       - cache
     expose:
-      - 3000
+      - 4000
     networks:
-       - go-network
-  ### ===================================
-  ### DATABASE SERVICE TERITORY
-  ### ===================================
+       - app-network
+  # ### ===================================
+  # ### DATABASE SERVICE TERITORY
+  # ### ===================================
   db:
     image: postgres:14-alpine
     restart: always
@@ -87,14 +108,14 @@ services:
       retries: 3
       test: env | grep $HOME
     env_file:
-      - .env
+      - apps/be/.env
     ports:
       - 5432:5432
     networks:
-       - go-network
-  ### ===================================
-  ### CACHING SERVICE TERITORY
-  ### ===================================
+       - app-network
+  # ### ===================================
+  # ### CACHING SERVICE TERITORY
+  # ### ===================================
   cache:
     image: redis:7-alpine
     restart: always
@@ -107,10 +128,10 @@ services:
     ports:
       - 6379:6379
     networks:
-       - go-network
-  ### ===================================
-  ### SEARCH SERVICE TERITORY
-  ### ===================================
+       - app-network
+  # ### ===================================
+  # ### SEARCH SERVICE TERITORY
+  # ### ===================================
   search:
     image: getmeili/meilisearch:latest
     restart: always
@@ -123,13 +144,13 @@ services:
       retries: 3
       test: env | grep $HOME
     env_file:
-      - .env
+      - apps/be/.env
     ports:
       - 7700:7700
     networks:
-     - go-network
+     - app-network
   ### ===================================
   ### NETWORKS SHARING GROUP TERITORY
   ### ===================================
 networks:
-  go-network:
+  app-network:

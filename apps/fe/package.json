@@ -1,0 +1,44 @@
+{
+	"name": "fe-monorepo",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"start:pm2": "pm2-runtime pm2.config.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "restuwahyu13:restuwahyu13/go-fast-search.git"
+	},
+	"author": {
+		"name": "Restu Wahyu Saputra",
+		"url": "https://github.com/restuwahyu13"
+	},
+	"maintainers": [
+		"Restu Wahyu Saputra"
+	],
+	"license": "MIT",
+	"engines": {
+		"node": ">= 20.x.x",
+		"npm": ">= 10.x.x"
+	},
+	"dependencies": {
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"next": "15.3.2"
+	},
+	"devDependencies": {
+		"typescript": "^5",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"@tailwindcss/postcss": "^4",
+		"tailwindcss": "^4",
+		"eslint": "^9",
+		"eslint-config-next": "15.3.2",
+		"@eslint/eslintrc": "^3"
+	}
+}

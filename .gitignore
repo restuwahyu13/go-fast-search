@@ -1,86 +1,40 @@
-# compiled output
-dist/
-node_modules/
-build/
-npm-debug.log
-yarn-error.log
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules/
+/apps/fe/node_modules/
+/apps/be/node_modules/
+
+# next.js
+/.next/
+/.cache/
+/.turbo/
+apps/fe/.next/
+apps/fe/.cache/
+apps/fe/.turbo/
+
+# go build
+/apps/be/api
+/apps/be/worker
+/apps/be/scheduler
+
+# misc
 .DS_Store
-.env
-.env.*
-.idea/
-.vscode/
-*.swp
-*.swo
-out/
-.next/
-.nuxt/
-.docusaurus/
+/apps/fe/.DS_Store
+/apps/be/.DS_Store
 
-# Logs
-logs
-*.log
+# debug
 npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+/apps/fe/logs
+/apps/be/logs
 
-# Tests
-/coverage
-/.nyc_output
+# env files
+/.env
+/.env.*
+/apps/fe/.env
+/apps/fe/.env.*
+/apps/be/.env
+/apps/be/.env.*
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# dotenv environment variable files
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-.env.example
-
-# temp directory
-.temp
-.tmp
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-*.pem
-*.csr
-*.key
-*.txt
-*.crt
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-## Coverage ##
-coverage/
-.nyc_output/
-
-## OS generated files ##
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-._*
-main
-worker
-api
-scheduler
+# typescript
+next-env.d.ts

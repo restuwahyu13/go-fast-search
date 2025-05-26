@@ -1,63 +1,38 @@
-GO = @go
 NPM = @npm
-NODEMON = @nodemon
 DOCKER = @docker
 COMPOSE = @docker-compose
+DOCKERFILE_FE = $(realpath ./apps/fe)
+DOCKERFILE_BE = $(realpath ./apps/be/external/deployments/docker)
 
 #################################
 # Application Territory
 #################################
+.PHONY: dev
+dev:
+	${NPM} run dev
+
 .PHONY: install
 install:
-	${GO} get .
-	${GO} mod verify
-	${NPM} i nodemon@latest -g
+	${NPM} run install
 
-.PHONY: adev
-adev:
-	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/api --count=1 --race -V --signal SIGTERM
+.PHONY: worker
+worker:
+	${NPM} run worker
 
-.PHONY: abuild
-abuild:
-	${GO} mod tidy
-	${GO} mod verify
-	${GO} vet --race -v ./cmd/api
-	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o api ./cmd/api
+.PHONY: cron
+cron:
+	${NPM} run cron
 
-.PHONY: wdev
-wdev:
-	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/worker --count=1 --race -V --signal SIGTERM
-
-.PHONY: wbuild
-wbuild:
-	${GO} mod tidy
-	${GO} mod verify
-	${GO} vet --race -v ./cmd/api
-	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o worker ./cmd/worker
-
-.PHONY: sdev
-sdev:
-	${NODEMON} -V -e .go,.env -w . -x go run ./cmd/scheduler --count=1 --race -V --signal SIGTERM
-
-.PHONY: sbuild
-sbuild:
-	${GO} mod tidy
-	${GO} mod verify
-	${GO} vet --race -v ./cmd/api
-	${GO} build --race -v --ldflags "-r -s -w -extldflags" -o scheduler ./cmd/scheduler
-
-
-
-.PHONY: test
-test:
-	${GO} test -v ./domain/services/**
+.PHONY: build
+build:
+	./app-build.sh
 
 #################################
 # Docker Territory
 #################################
 .PHONY: upb
 upb:
-	${DOCKER} build -t go-fast-search:latest --compress .
+	./docker-build.sh
 
 .PHONY: up
 up:
