@@ -1,0 +1,632 @@
+{
+	"info": {
+		"_postman_id": "498b0426-ef10-4072-ab0d-135adeb0f087",
+		"name": "go-fast-search",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5474931"
+	},
+	"item": [
+		{
+			"name": "core",
+			"item": [
+				{
+					"name": "Meilisearch -  Search Doc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"q\": \"jamal\",\n    // \"filter\": \"deleted_at = -62135596800 AND id = '4746ce2f-490d-4baa-aaf2-8d6eb402a0af' AND (updated_at = -62135596800 AND created_at > 1748166584) OR (updated_at > 1748166584)\",\n    // \"sort\": [\n    //     \"created_at:desc\"\n    // ],\n    \"attributesToSearchOn\": [\n        \"email\"\n    ],\n    \"attributesToHighlight\": [\n        \"name\",\n        \"email\"\n    ],\n    \"showMatchesPosition\": true,\n    \"attributesToRetrieve\": [\n        \"id\",\n        \"name\",\n        \"email\",\n        \"phone\",\n        \"date_of_birth\",\n        \"age\",\n        \"address\",\n        \"city\",\n        \"state\",\n        \"direction\",\n        \"country\",\n        \"postal_code\",\n        \"created_at\"\n    ],\n    \"hitsPerPage\": 10,\n    \"limit\": 10\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/search",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"search"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch -  Create Doc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"anto bapon\",\n    \"email\": \"antobapon13@gmail.com\",\n    \"phone\": \"+6287887242893\",\n    \"date_of_birth\": \"1990-05-15\",\n    \"age\": \"33\",\n    \"address\": \"123 Park Avenue\",\n    \"city\": \"London\",\n    \"state\": \"England\",\n    \"direction\": \"North\",\n    \"country\": \"United Kingdom\",\n    \"postal_code\": \"16431\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/search",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"search"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch -  Get Doc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/documents",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"documents"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch -  Fetch Doc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"limit\": 10,\n    \"offset\": 0,\n    \"fields\": [\n        \"id\",\n        \"name\",\n        \"email\",\n        \"phone\",\n        \"date_of_birth\",\n        \"age\",\n        \"address\",\n        \"city\",\n        \"state\",\n        \"direction\",\n        \"country\",\n        \"postal_code\",\n        \"created_at\",\n        \"deleted_at\"\n    ],\n    \"filter\": \"deleted_at IS NULL AND id = 'f843d104-406b-45f7-9f23-4c710b61e022'\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/documents/fetch",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"documents",
+								"fetch"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch -  Get Setting",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/settings",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"settings"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch -  Delete Doc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/users/documents",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								"users",
+								"documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch - Sort Attributes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    \"created_at\"\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/users/settings/sortable-attributes",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								"users",
+								"settings",
+								"sortable-attributes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch - Filter Attributes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    \"deleted_at\",\n    \"created_at\",\n    \"age\",\n    \"state\",\n    \"direction\",\n    \"country\"\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/settings/filterable-attributes",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"settings",
+								"filterable-attributes"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch - Distinct Attributes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    \"id\",\n    \"deleted_at\"\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/settings/distinct-attributes",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"settings",
+								"distinct-attributes"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch - Delete Search Attributes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/settings/searchable-attributes",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"settings",
+								"searchable-attributes"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Meilisearch - Search Attributes",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{MEILISEARCH_KEY}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    \"name\",\n    \"email\",\n    \"phone\"\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{MEILISEARCH_URL}}/indexes/:doc/settings/searchable-attributes",
+							"host": [
+								"{{MEILISEARCH_URL}}"
+							],
+							"path": [
+								"indexes",
+								":doc",
+								"settings",
+								"searchable-attributes"
+							],
+							"variable": [
+								{
+									"key": "doc",
+									"value": "users"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Create Doc",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{ACCESS_TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"anto bapon\",\n    \"email\": \"antobapon13@gmail.com\",\n    \"phone\": \"+6287887242893\",\n    \"date_of_birth\": \"1990-05-15\",\n    \"age\": \"33\",\n    \"address\": \"123 Park Avenue\",\n    \"city\": \"London\",\n    \"state\": \"England\",\n    \"direction\": \"North\",\n    \"country\": \"United Kingdom\",\n    \"postal_code\": \"16431\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{API_URL}}/users",
+					"host": [
+						"{{API_URL}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Doc",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{ACCESS_TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{API_URL}}/users?limit=10&page=1&search=jason",
+					"host": [
+						"{{API_URL}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "search",
+							"value": "jason"
+						},
+						{
+							"key": "search_by",
+							"value": "name,email,phone,age,city,state,direction,country,postal_code",
+							"disabled": true
+						},
+						{
+							"key": "sort",
+							"value": "desc",
+							"disabled": true
+						},
+						{
+							"key": "sort_by",
+							"value": "created_at",
+							"disabled": true
+						},
+						{
+							"key": "filter",
+							"value": "{\"name\": \"hello\"}",
+							"disabled": true
+						},
+						{
+							"key": "filter_by",
+							"value": "age",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Doc",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{ACCESS_TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Ritchie Sambora\",\n    \"email\": \"ritchie13@gmail.com\",\n    \"phone\": \"+16107196252\",\n    \"date_of_birth\": \"1961-12-16\",\n    \"age\": \"21\",\n    \"address\": \"9595 Rippin Spurs\",\n    \"city\": \"Anastasiaburgh\",\n    \"state\": \"Rhode Island\",\n    \"direction\": \"Northeast\",\n    \"country\": \"Panama\",\n    \"postal_code\": \"45000\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{API_URL}}/users/:id",
+					"host": [
+						"{{API_URL}}"
+					],
+					"path": [
+						"users",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "a328a497-e7e4-460d-b55a-21f0dc66fb34"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

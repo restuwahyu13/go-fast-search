@@ -35,7 +35,7 @@ func MeiliSearchPublisher[T any](amqp inf.IRabbitMQ, secret string, id any, data
 	return nil
 }
 
-func SleepBackoff[T any](req dto.Request[dto.SleepBackoff], handler func() (T, error)) (T, error) {
+func NextSleepBackoff[T any](req dto.Request[dto.SleepBackoff], handler func() (T, error)) (T, error) {
 	cmdIncrBy := req.Config.Redis.IncrBy(req.Body.Ctx, req.Body.Key, req.Body.Count)
 	if err := cmdIncrBy.Err(); err != nil {
 		return any(nil).(T), err
@@ -68,6 +68,39 @@ func SleepBackoff[T any](req dto.Request[dto.SleepBackoff], handler func() (T, e
 	}
 
 	return any(nil).(T), nil
+}
+
+func SleepBackoff[T any](req dto.Request[dto.SleepBackoff], handler func() (T, error)) (T, error) {
+	cmdIncrBy := req.Config.Redis.IncrBy(req.Body.Ctx, req.Body.Key, req.Body.Count)
+	if err := cmdIncrBy.Err(); err != nil {
+		return any(nil).(T), err
+	}
+
+	if cmdIncrBy.Val() >= req.Body.Retry {
+		breakTime := time.Duration(time.Second * time.Duration(req.Body.BackOffTime))
+
+		cmdTTL := req.Config.Redis.TTL(req.Body.Ctx, req.Body.Key)
+		if err := cmdTTL.Err(); err != nil {
+			return any(nil).(T), err
+		}
+
+		if cmdTTL.Val() < 1 {
+			cmdSet := req.Config.Redis.SetEx(req.Body.Ctx, req.Body.Key, cmdIncrBy.Val(), breakTime)
+			if err := cmdSet.Err(); err != nil {
+				return any(nil).(T), err
+			}
+
+		} else if cmdTTL.Val() > 1 && cmdTTL.Val() < 3 {
+			cmdSet := req.Config.Redis.Set(req.Body.Ctx, req.Body.Key, req.Body.Count, 0)
+			if err := cmdSet.Err(); err != nil {
+				return any(nil).(T), err
+			}
+		}
+	}
+
+	time.Sleep(time.Second * time.Duration(cmdIncrBy.Val()))
+
+	return handler()
 }
 
 func TimeStampToUnix(timestamp any) (int64, error) {
