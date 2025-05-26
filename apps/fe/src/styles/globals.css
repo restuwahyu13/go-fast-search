@@ -1,1 +1,5 @@
 @import 'tailwindcss';
+
+em {
+	background-color: #fef08a; /* Tailwind's bg-yellow-200 */
+}

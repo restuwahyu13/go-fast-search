@@ -14,6 +14,8 @@ services:
       timeout: 30ms
       retries: 3
       test: env | grep $HOME
+    env_file:
+      - apps/fe/.env
     depends_on:
       - api
     ports:
