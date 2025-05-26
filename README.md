@@ -45,6 +45,17 @@ This project is a simple backend API implementation using Golang to support fast
         make build
     ```
 
+- ### Database
+
+   + #### Running Migration
+    ```sh
+        cd apps/be/database; make mig-up
+    ```
+   + #### Running Seeder
+    ```sh
+        cd apps/be/database; make seed-up
+    ```
+
 
 ## System Design Architecture
 
