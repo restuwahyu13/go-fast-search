@@ -9,7 +9,7 @@
 		"dev": "turbo run dev --parallel",
 		"lint": "turbo run lint",
 		"check": "turbo run check-types",
-		"install": "cd ./apps/be; go mod download; go mod verify; cd ..",
+		"install": "cd ./apps/fe; npm i; cd ..; cd ./be; npm i; go mod download; go mod verify; cd ..",
 		"worker": "cd ./apps/be; nodemon -V -e .go,.env -w . -x go run ./cmd/worker --count=1 --race -V --signal SIGTERM; cd ..",
 		"scheduler": "cd ./apps/be; nodemon -V -e .go,.env -w . -x go run ./cmd/scheduler --count=1 --race -V --signal SIGTERM; cd .."
 	},
