@@ -10,7 +10,7 @@ This project is a simple backend API implementation using Golang to support fast
 - [x] CDC Pattern
 - [x] Concurrency pattern: Worker Pool & Pipeline
 - [x] Fullstack Monorepo setup
-- [x] Message broker authorization
+- [x] Message broker authorization + Dead letter queue
 - [x] Live reload for Golang development
 - [x] Docker monorepo setup
 - [x] Melilisearch setup
