@@ -17,6 +17,7 @@ type IMeiliSearch interface {
 	UpdateTypoTolerance(doc string, request *meilisearch.TypoTolerance) (*meilisearch.TaskInfo, error)
 	UpdateFilterableAttributes(doc string, request []string) ([]string, error)
 	UpdateSortableAttributes(doc string, request []string) ([]string, error)
+	GetSearchableAttributes(doc string) ([]string, error)
 	UpdateSearchableAttributes(doc string, request []string) ([]string, error)
 	UpdateDisplayedAttributes(doc string, request []string) ([]string, error)
 }

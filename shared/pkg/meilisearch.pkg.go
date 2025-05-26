@@ -343,6 +343,15 @@ func (p meilisearch) UpdateSortableAttributes(doc string, request []string) ([]s
 	return *sortAttributesPtr, nil
 }
 
+func (p meilisearch) GetSearchableAttributes(doc string) ([]string, error) {
+	searchAttributesPtr, err := p.meilisearch.Index(doc).GetSearchableAttributesWithContext(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return *searchAttributesPtr, nil
+}
+
 func (p meilisearch) UpdateSearchableAttributes(doc string, request []string) ([]string, error) {
 	searchAttributesPtr, err := p.meilisearch.Index(doc).GetSearchableAttributesWithContext(p.ctx)
 	if err != nil {

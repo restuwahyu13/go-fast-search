@@ -140,16 +140,33 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 			updatedAtFilter := fmt.Sprintf("updated_at > %d", cdcTimeUnix)
 
 			filter := fmt.Sprintf("deleted_at = %d AND id = '%s' AND (%s) OR (%s)", defaultTimeUnix, usersDocEntitie.ID, createdAtFilter, updatedAtFilter)
+			fields := []string{
+				"id",
+				"name",
+				"email",
+				"phone",
+				"date_of_birth",
+				"age",
+				"address",
+				"city",
+				"state",
+				"direction",
+				"country",
+				"postal_code",
+				"created_at",
+				"updated_at",
+				"deleted_at",
+			}
 
-			filterSearch := meilisearch.SearchRequest{Query: "", Filter: filter, Sort: []string{"created_at:desc"}}
-			usersDoc, err := usersRepositorie.Search(userEntity.ID, &filterSearch)
+			fetchSearch := meilisearch.DocumentsQuery{Filter: filter, Fields: fields}
+			usersFetchDocuments, err := usersRepositorie.Find(&fetchSearch)
 
 			if err != nil {
 				errChan <- err
 				return
 			}
 
-			if usersDoc.Hits != nil {
+			if usersFetchDocuments.Results != nil {
 				isTrue := true
 				updateDocFound = &isTrue
 				usersUpdateDocEntities = append(usersUpdateDocEntities, usersDocEntitie)

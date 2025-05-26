@@ -251,14 +251,6 @@ func (s usersService) FindAllUsers(ctx context.Context, req dto.Request[dto.Meil
 		req.Query.Page = 1
 	}
 
-	if req.Query.SearchBy == "" {
-		req.Query.SearchBy = "name,email,phone"
-	}
-
-	if req.Query.SortBy == "" {
-		req.Query.SortBy = "created_at"
-	}
-
 	if req.Query.Sort == "" {
 		req.Query.Sort = "desc"
 	}

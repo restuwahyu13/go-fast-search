@@ -6,6 +6,8 @@ services:
     container_name: go-api
     image: go-fast-search:latest
     restart: always
+    mem_limit: 512m
+    mem_swappiness: 70
     command: ./api
     healthcheck:
       interval: 120ms
@@ -29,6 +31,8 @@ services:
     container_name: go-worker
     image: go-fast-search:latest
     restart: always
+    mem_limit: 1gb
+    mem_swappiness: 70
     command: ./worker
     healthcheck:
       interval: 120ms
@@ -52,6 +56,8 @@ services:
     container_name: go-scheduler
     image: go-fast-search:latest
     restart: always
+    mem_limit: 1gb
+    mem_swappiness: 70
     command: ./scheduler
     healthcheck:
       interval: 120ms
@@ -108,6 +114,8 @@ services:
   search:
     image: getmeili/meilisearch:latest
     restart: always
+    mem_limit: 1gb
+    mem_swappiness: 70
     healthcheck:
       interval: 120ms
       start_period: 60ms
@@ -119,7 +127,7 @@ services:
     ports:
       - 7700:7700
     networks:
-       - go-network
+     - go-network
   ### ===================================
   ### NETWORKS SHARING GROUP TERITORY
   ### ===================================
