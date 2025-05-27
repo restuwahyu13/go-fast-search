@@ -160,6 +160,13 @@ func (a Api) Middleware() {
 		STSSeconds:           900,
 	}).Handler)
 
+	a.ROUTER.MethodNotAllowed(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		helper.Api(w, r, opt.Response{
+			StatCode: http.StatusMethodNotAllowed,
+			ErrMsg:   "Route method not allowed",
+		})
+	}))
+
 	a.ROUTER.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		helper.Api(w, r, opt.Response{
 			StatCode: http.StatusNotFound,

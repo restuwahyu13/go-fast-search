@@ -77,18 +77,18 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 
 		usersRepositorie := repo.NewUsersMeilisearchRepositorie(s.ctx, s.mls)
 
-		filterAttributes := []string{"id", "deleted_at", "created_at", "updated_at"}
-		sortAttributes := []string{"created_at"}
+		// filterAttributes := []string{"id", "deleted_at", "created_at", "updated_at"}
+		// sortAttributes := []string{"created_at"}
 
-		if err := usersRepositorie.UpdateFilterableAttributes(filterAttributes...); err != nil {
-			errChan <- err
-			return
-		}
+		// if err := usersRepositorie.UpdateFilterableAttributes(filterAttributes...); err != nil {
+		// 	errChan <- err
+		// 	return
+		// }
 
-		if err := usersRepositorie.UpdateSortableAttributes(sortAttributes...); err != nil {
-			errChan <- err
-			return
-		}
+		// if err := usersRepositorie.UpdateSortableAttributes(sortAttributes...); err != nil {
+		// 	errChan <- err
+		// 	return
+		// }
 
 		var insertDocFound, updateDocFound *bool
 		usersDocEntitie := entitie.UsersDocument{}
@@ -96,18 +96,6 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 		usersInsertDocEntities := []entitie.UsersDocument{}
 
 		for _, userEntity := range usersEntities {
-			createdAtUnix, err := helper.TimeStampToUnix(userEntity.CreatedAt.Format(time.RFC3339))
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			updatedAtUnix, err := helper.TimeStampToUnix(userEntity.UpdatedAt.Time.Format(time.RFC3339))
-			if err != nil {
-				errChan <- err
-				return
-			}
-
 			usersDocEntitie.ID = userEntity.ID
 			usersDocEntitie.Name = userEntity.Name
 			usersDocEntitie.Email = userEntity.Email
@@ -120,8 +108,6 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 			usersDocEntitie.Direction = userEntity.Direction
 			usersDocEntitie.Country = userEntity.Country
 			usersDocEntitie.PostalCode = userEntity.PostalCode
-			usersDocEntitie.CreatedAt = createdAtUnix
-			usersDocEntitie.UpdatedAt = updatedAtUnix
 
 			createdAtFilter := fmt.Sprintf("updated_at IS NULL AND created_at > %d", cdcTimeUnix)
 			updatedAtFilter := fmt.Sprintf("updated_at IS NOT NULL AND updated_at > %d", cdcTimeUnix)
@@ -145,8 +131,8 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 				"deleted_at",
 			}
 
-			fetchSearch := meilisearch.DocumentsQuery{Filter: filter, Fields: fields, Offset: 0, Limit: 1000}
-			usersFetchDocuments, err := usersRepositorie.Find(&fetchSearch)
+			filterFindDocQuery := meilisearch.DocumentsQuery{Filter: filter, Fields: fields, Offset: 0, Limit: 1000}
+			usersFetchDocuments, err := usersRepositorie.Find(&filterFindDocQuery)
 
 			if err != nil {
 				errChan <- err
@@ -156,10 +142,24 @@ func (s searchScheduler) updateUsers(wg *sync.WaitGroup, start_at string, usersE
 			if usersFetchDocuments.Results != nil {
 				isTrue := true
 				updateDocFound = &isTrue
+
+				usersDocEntitie.UpdatedAt, err = helper.TimeStampToUnix(userEntity.UpdatedAt.Time.Format(time.RFC3339))
+				if err != nil {
+					errChan <- err
+					return
+				}
+
 				usersUpdateDocEntities = append(usersUpdateDocEntities, usersDocEntitie)
 			} else {
 				isTrue := true
 				insertDocFound = &isTrue
+
+				usersDocEntitie.CreatedAt, err = helper.TimeStampToUnix(userEntity.CreatedAt.Format(time.RFC3339))
+				if err != nil {
+					errChan <- err
+					return
+				}
+
 				usersInsertDocEntities = append(usersInsertDocEntities, usersDocEntitie)
 			}
 		}

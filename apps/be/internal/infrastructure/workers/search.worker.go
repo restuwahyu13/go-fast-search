@@ -147,8 +147,6 @@ func (w searchWorker) searchConsumer() {
 		}
 
 		if dlq_req.Body.Data != nil && dlq_req.Error != nil {
-			pkg.Logrus(cons.ERROR, dlq_req.Error)
-
 			dlq_req.Exchange = amqp_req.Option.ExchangeName
 			dlq_req.ExchangeType = amqp_req.Option.ExchangeType
 			dlq_req.Queue = amqp_req.Option.QueueName
@@ -158,7 +156,7 @@ func (w searchWorker) searchConsumer() {
 				return rabbitmq.NackDiscard
 			}
 
-			return rabbitmq.NackDiscard
+			return rabbitmq.Ack
 		}
 
 		return rabbitmq.Ack

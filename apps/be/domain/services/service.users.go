@@ -95,18 +95,6 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 		return
 	}
 
-	updatedAtUnix, err := helper.TimeStampToUnix(usersEntitie.UpdatedAt.Time.Format(time.RFC3339))
-	if err != nil {
-		pkg.Logrus(cons.ERROR, err)
-		return
-	}
-
-	deletedAtUnix, err := helper.TimeStampToUnix(usersEntitie.DeletedAt.Time.Format(time.RFC3339))
-	if err != nil {
-		pkg.Logrus(cons.ERROR, err)
-		return
-	}
-
 	usersDocEntitie := entitie.UsersDocument{}
 	usersDocEntitie.ID = usersEntitie.ID
 	usersDocEntitie.Name = usersEntitie.Name
@@ -121,8 +109,6 @@ func (s usersService) CreateUsers(ctx context.Context, req dto.Request[dto.Creat
 	usersDocEntitie.Country = usersEntitie.Country
 	usersDocEntitie.PostalCode = usersEntitie.PostalCode
 	usersDocEntitie.CreatedAt = createdAtUnix
-	usersDocEntitie.UpdatedAt = updatedAtUnix
-	usersDocEntitie.DeletedAt = deletedAtUnix
 
 	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
 
@@ -191,19 +177,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 		return
 	}
 
-	createdAtUnix, err := helper.TimeStampToUnix(usersEntitie.CreatedAt.Format(time.RFC3339))
-	if err != nil {
-		pkg.Logrus(cons.ERROR, err)
-		return
-	}
-
 	updatedAtUnix, err := helper.TimeStampToUnix(usersEntitie.UpdatedAt.Time.Format(time.RFC3339))
-	if err != nil {
-		pkg.Logrus(cons.ERROR, err)
-		return
-	}
-
-	deletedAtUnix, err := helper.TimeStampToUnix(usersEntitie.DeletedAt.Time.Format(time.RFC3339))
 	if err != nil {
 		pkg.Logrus(cons.ERROR, err)
 		return
@@ -222,9 +196,7 @@ func (s usersService) UpdateUsers(ctx context.Context, req dto.Request[dto.Updat
 	usersDocEntitie.Direction = usersEntitie.Direction
 	usersDocEntitie.Country = usersEntitie.Country
 	usersDocEntitie.PostalCode = usersEntitie.PostalCode
-	usersDocEntitie.CreatedAt = createdAtUnix
 	usersDocEntitie.UpdatedAt = updatedAtUnix
-	usersDocEntitie.DeletedAt = deletedAtUnix
 
 	amqp := pkg.NewRabbitMQ(ctx, s.amqp)
 

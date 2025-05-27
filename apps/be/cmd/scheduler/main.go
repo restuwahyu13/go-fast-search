@@ -129,7 +129,6 @@ func (w Scheduler) scheduler(wg *sync.WaitGroup, rso syncOnce) {
 
 func (w Scheduler) register(wg *sync.WaitGroup) {
 	worker := runtime.NumCPU()
-
 	searchSchedulerOnce := new(sync.Once)
 
 	rso := syncOnce{
@@ -170,8 +169,9 @@ func (w Scheduler) Listener() {
 			return
 
 		default:
-			time.Sleep(time.Second * 5)
 			wg.Wait()
+			time.Sleep(time.Second * 5)
+			pkg.Logrus(cons.INFO, "Scheduler is running")
 		}
 	}
 }

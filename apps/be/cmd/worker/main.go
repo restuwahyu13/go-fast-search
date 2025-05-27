@@ -196,8 +196,9 @@ func (w Worker) Listener() {
 			return
 
 		default:
-			time.Sleep(time.Second * 5)
 			wg.Wait()
+			time.Sleep(time.Second * 5)
+			pkg.Logrus(cons.INFO, "Worker is running")
 		}
 	}
 }
