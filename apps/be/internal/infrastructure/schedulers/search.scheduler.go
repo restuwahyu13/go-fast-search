@@ -275,16 +275,6 @@ func (s searchScheduler) breakRun(rds inf.IRedis, handler func(rds inf.IRedis)) 
 			}
 
 		}
-
-		now := time.Now()
-
-		key := "WORKER:SEARCH:CDC"
-		value := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute()-10, now.Second(), now.Nanosecond(), now.Location()).Format(time.RFC3339)
-
-		if err := rds.Set(key, value); err != nil {
-			pkg.Logrus(cons.ERROR, err)
-			return
-		}
 	}
 
 	if result <= sync {
