@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guregu/null/v6/zero"
 	"github.com/meilisearch/meilisearch-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
@@ -186,7 +185,6 @@ func (s searchScheduler) markUsersAsSync(wg *sync.WaitGroup, usersEntitiesChan c
 
 		for _, userEntity := range usersEntities {
 			usersEntitie.ID = userEntity.ID
-			usersEntitie.UpdatedAt = zero.TimeFrom(time.Now())
 			usersEntitie.IsSync = cons.TRUE
 
 			if err := usersRepositorie.Update(usersEntitie, "id", "is_sync", &usersEntitie.ID, &usersEntitie.IsSync); err != nil {
