@@ -19,9 +19,9 @@ install:
 worker:
 	${NPM} run worker
 
-.PHONY: cron
-cron:
-	${NPM} run cron
+.PHONY: scheduler
+scheduler:
+	${NPM} run scheduler
 
 .PHONY: build
 build:

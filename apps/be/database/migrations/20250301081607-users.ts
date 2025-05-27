@@ -19,6 +19,7 @@ module.exports = {
 					direction: { type: DataTypes.STRING(200) },
 					country: { type: DataTypes.STRING(200) },
 					postal_code: { type: DataTypes.STRING(200) },
+					is_sync: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 					created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP') },
 					updated_at: { type: DataTypes.DATE },
 					deleted_at: { type: DataTypes.DATE }

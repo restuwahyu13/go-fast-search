@@ -21,6 +21,7 @@ type UsersEntitie struct {
 	Direction     string    `json:"direction" bun:"direction,notnull"`
 	Country       string    `json:"country" bun:"country,notnull"`
 	PostalCode    string    `json:"postal_code" bun:"postal_code,notnull"`
+	IsSync        bool      `json:"is_sync" bun:"is_sync,notnull,default:false" `
 	CreatedAt     time.Time `json:"created_at" bun:"created_at,default:current_timestamp"`
 	UpdatedAt     zero.Time `json:"updated_at" bun:"updated_at,nullzero"`
 	DeletedAt     zero.Time `json:"deleted_at" bun:"deleted_at,nullzero"`

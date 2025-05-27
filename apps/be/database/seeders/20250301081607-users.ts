@@ -99,7 +99,7 @@ module.exports = {
 				pagination: { maxTotalHits: 1000 },
 				searchableAttributes: ['name', 'email', 'phone'],
 				sortableAttributes: ['created_at'],
-				filterableAttributes: ['age', 'state', 'direction', 'country', 'created_at', 'deleted_at']
+				filterableAttributes: ['id', 'age', 'state', 'direction', 'country', 'created_at', 'deleted_at']
 			})
 
 			return await index
